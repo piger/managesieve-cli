@@ -1,0 +1,11 @@
+managesievelib:
+---------------
+- on result 'BYE' quit immediatly
+- raise exception on 'BYE'?
+- sieve_name(): correct quoting
+- authentication schemes beside 'LOGIN'
+
+test_sievelib.py:
+----------------
+- authenticate/login
+- capability
