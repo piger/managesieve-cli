@@ -1,0 +1,69 @@
+Announcing:
+
+                          managesieve
+                         =============
+                          Version 0.2
+
+
+A MANGAGESIEVE client library for remotely managing Sieve scripts,
+including an interactive 'sieveshell'.
+
+This module allows accessing a Sieve-Server for managing Sieve scripts
+there. For more information about the MANAGESIEVE protocol see draft
+http://www.ietf.org/internet-drafts/draft-martin-managesieve-04.txt .
+
+
+What is MANAGESIEVE?
+--------------------
+
+Sieve scripts allow users to filter incoming email. Message stores are
+commonly sealed servers so users cannot log into them, yet users must
+be able to update their scripts on them. This module implements a
+protocol "managesieve" for securely managing Sieve scripts on a remote
+server. This protocol allows a user to have multiple scripts, and also
+alerts a user to syntactically flawed scripts.
+
+This an interim measure as it is hoped that eventually Sieve scripts
+will be stored on ACAP.
+
+
+Availablity
+-----------
+
+'managesieve' is available for download at
+http://www.crazy-compilers.com/py-lib/#managesieve
+
+Requirements
+------------
+
+Requires Python >= 2.0
+
+
+Not yet implemented
+-------------------
+
+- Only athentication method LOGIN is currently supported.
+- STARTTLS is not yet implemented.
+- sieve-names are only quoted dump (put into quotes, but no escapes yet).
+
+
+Copyright/License
+-----------------
+
+(C) Copyright 2003 by Hartmut Goebel <h.goebel@crazy-compilers.com>
+
+License: Python Software Foundation License
+         http://www.opensource.org/licenses/PythonSoftFoundation.html
+
+License for 'sieveshell' and test suite: GPL
+	http://www.opensource.org/licenses/gpl-license.php
+
+Credits
+-------
+
+Based on Sieve.py from Ulrich Eck <ueck@net-labs.de> which is part of
+of 'ImapClient' (see http://www.zope.org/Members/jack-e/ImapClient), a
+Zope product.
+
+Some ideas taken from imaplib written by Piers Lauder
+<piers@cs.su.oz.au> et al.

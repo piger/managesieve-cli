@@ -1,0 +1,10 @@
+Version 0.2 by Hartmut Goebel <h.goebel at crazy-compilers.com>
+- renamed to 'managesieve'
+- added sieveshell
+- major overhoul
+- added support for HAVESPACE, CAPABILITY
+- added unittest testsuite (covers most cases)
+
+Version 0.1 by Ulrich Eck <ueck at net-labs.de>
+- initial release of Sieve.py by Ulrich Eck as part of 'ImapClient'
+  (see http://www.zope.org/Members/jack-e/ImapClient), a Zope product.
