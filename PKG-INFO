@@ -1,8 +1,8 @@
 Metadata-Version: 1.0
 Name: python-managesieve
-Version: 0.2
+Version: 0.3
 Summary: MANAGESIEVE client library for remotely managing Sieve scripts
-Home-page: http://www.crazy-compilers.com/py-lib/#managesieve
+Home-page: http://www.crazy-compilers.com/py-lib/managesieve.html
 Author: Hartmut Goebel
 Author-email: h.goebel@crazy-compilers.com
 License: Python
@@ -28,5 +28,5 @@ Description:
         This an interim measure as it is hoped that eventually Sieve scripts
         will be stored on ACAP.
         
-Keywords: sieve,managesieve,sieveshell,command-line
+Keywords: sieve,managesieve,sieveshell
 Platform: POSIX

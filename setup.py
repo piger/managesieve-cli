@@ -30,6 +30,15 @@ will be stored on ACAP.
 
 from distutils.command.bdist_rpm import bdist_rpm
 
+# patch distutils if it can't cope with the "classifiers" or
+# "download_url" keywords
+import sys
+if sys.version < '2.2.3':
+    from distutils.dist import DistributionMetadata
+    DistributionMetadata.classifiers = None
+    DistributionMetadata.download_url = None
+
+
 class MyBDist_RPM(bdist_rpm):
     """Wrapper for 'bdist_rpm' handling 'python2'"""
     def finalize_options(self):
@@ -46,17 +55,36 @@ class MyBDist_RPM(bdist_rpm):
 
 
 setup (name = "python-managesieve",
-       version = "0.2",
+       version = "0.3",
        description = description,
        long_description = long_description,
        author = "Hartmut Goebel",
        author_email = "h.goebel@crazy-compilers.com",
        #maintainer = "Hartmut Goebel",
        #maintainer_email = "h.goebel@crazy-compilers.com",
-       url = "http://www.crazy-compilers.com/py-lib/#managesieve",
+       url = "http://www.crazy-compilers.com/py-lib/managesieve.html",
        license = 'Python',
        platforms = ['POSIX'],
-       keywords = ['sieve', 'managesieve', 'sieveshell', 'command-line'],
+       keywords = ['sieve', 'managesieve', 'sieveshell'],
        py_modules = ['managesieve'],
+       scripts = ['sieveshell'],
        cmdclass = {'bdist_rpm': MyBDist_RPM},
-      )
+       classifiers = [
+          'Development Status :: 4 - Beta',
+          'Environment :: Console',
+          'Intended Audience :: End Users/Desktop',
+          'Intended Audience :: Developers',
+          #'Intended Audience :: System Administrators',
+          'License :: OSI Approved :: Python Software Foundation License',
+          'License :: OSI Approved :: GNU General Public License (GPL)',
+          'Natural Language :: English',
+          #'Operating System :: MacOS :: MacOS X',
+          #'Operating System :: Microsoft :: Windows',
+          #'Operating System :: POSIX',
+          'Operating System :: OS Independent',
+          'Programming Language :: Python',
+          'Topic :: Communications :: Email',
+          'Topic :: Software Development :: Libraries :: Python Modules'
+          'Topic :: Utilities'
+          ],
+     )

@@ -356,7 +356,7 @@ class MANAGESIEVE:
                                   sieve_name(mech), *authobjects)
         if typ == 'OK':
             self.state = 'AUTH'
-        return typ, data
+        return typ
 
 
     def login(self, auth, user, password):

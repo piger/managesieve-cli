@@ -2,3 +2,4 @@ include test/*
 exclude test/*~
 include MANIFEST.in HISTORY TODO
 include draft-martin-managesieve-04.txt
+include sieveshell
