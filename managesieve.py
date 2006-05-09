@@ -254,11 +254,10 @@ class MANAGESIEVE:
                     self._mesg('read literal size %s' % size)
             return self._read(size), self._get_line()
         else:
-            for i in range(len(data)):
-                if data[i] == ' ':
-                    return data[:i], data[i+1:]
-            else:
-                return data, ''
+            data = data.split(' ', 1)
+            if len(data) == 1:
+                data.append('')
+            return data
 
     def _get_response(self):
         """
@@ -325,6 +324,8 @@ class MANAGESIEVE:
                     if not resp.startswith(' '):
                         break
                     resp = resp[1:]
+                if len(dat) == 1:
+                    dat.append(None)
                 data.append(dat)
                 resp = self._get_line()
         return self.error('Should not come here')
@@ -420,7 +421,7 @@ class MANAGESIEVE:
             if __debug__:
                 if not len(dat) in (1, 2):
                     self.error("Unexpected result from LISTSCRIPTS: %r" (dat,))
-            scripts.append( (dat[0], len(dat) == 2) )
+            scripts.append( (dat[0], dat[1] is not None ))
         return typ, scripts
 
 

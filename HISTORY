@@ -2,7 +2,9 @@ Version 0.4 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 unreleased
 -----------
 * managesieve:
-  - removed dependency on some imaplib's private debug-functions
+  - If a capability had no values (like 'STARTTLS'),
+    _parse_capabilities failed. Fixed.
+  - removed dependency on some imaplib's private functions
 
 Version 0.3 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 -----------
