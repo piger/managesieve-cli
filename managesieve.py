@@ -227,15 +227,21 @@ class MANAGESIEVE:
             if self.debug >= 4: self._mesg('> %r' % data)
             else: self._log('> %s' % data)
         try:
-            self._send('%s%s' % (data, CRLF))
-            for o in options:
-                if __debug__:
-                    if self.debug >= 4: self._mesg('> %r' % o)
-                    else: self._log('> %r' % data)
-                self._send('%s%s' % (o, CRLF))
-        except (socket.error, OSError), val:
-            raise self.abort('socket error: %s' % val)
-        return self._get_response()
+            try:
+                self._send('%s%s' % (data, CRLF))
+                for o in options:
+                    if __debug__:
+                        if self.debug >= 4: self._mesg('> %r' % o)
+                        else: self._log('> %r' % data)
+                    self._send('%s%s' % (o, CRLF))
+            except (socket.error, OSError), val:
+                raise self.abort('socket error: %s' % val)
+            return self._get_response()
+        except self.abort, val:
+            if __debug__:
+                if self.debug >= 1:
+                    self.print_log()
+            raise
 
 
     def _readstring(self, data):
