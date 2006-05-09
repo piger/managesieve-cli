@@ -4,7 +4,7 @@ A Protocol for Remotely Managing Sieve Scripts
 Based on <draft-martin-managesieve-04.txt>
 """
 
-__version__ = "0.2"
+__version__ = "0.4"
 __author__ = """Hartmut Goebel <h.goebel@crazy-compilers.com>
 Ulrich Eck <ueck@net-labs.de> April 2001
 """
@@ -12,8 +12,6 @@ Ulrich Eck <ueck@net-labs.de> April 2001
 import binascii, re, socket, time, random, sys
 
 __all__ = [ 'MANAGESIEVE', 'SIEVE_PORT', 'OK', 'NO', 'BYE', 'Debug']
-
-from imaplib import _log, _mesg
 
 Debug = 0
 CRLF = '\r\n'
@@ -125,8 +123,11 @@ class MANAGESIEVE:
         # Get server welcome message,
         # request and store CAPABILITY response.
         if __debug__:
+            self._cmd_log_len = 10
+            self._cmd_log_idx = 0
+            self._cmd_log = {}           # Last `_cmd_log_len' interactions
             if self.debug >= 1:
-                _mesg('managesieve version %s' % __version__)
+                self._mesg('managesieve version %s' % __version__)
 
         typ, data = self._get_response()
         if typ == 'OK':
@@ -138,7 +139,7 @@ class MANAGESIEVE:
         for typ, data in lines:
             if __debug__:
                 if self.debug >= 3:
-                    _mesg('%s: %r' % (typ, data))
+                    self._mesg('%s: %r' % (typ, data))
             if typ == "IMPLEMENTATION":
                 self.implementation = data
             elif typ == "SASL":
@@ -191,9 +192,9 @@ class MANAGESIEVE:
         line = line[:-2]
         if __debug__:
             if self.debug >= 4:
-                _mesg('< %s' % line)
+                self._mesg('< %s' % line)
             else:
-                _log('< %s' % line)
+                self._log('< %s' % line)
         return line
 
     def _simple_command(self, *args):
@@ -223,14 +224,14 @@ class MANAGESIEVE:
         # concatinate command and arguments (if any)
         data = " ".join(filter(None, (name, arg1, arg2)))
         if __debug__:
-            if self.debug >= 4: _mesg('> %r' % data)
-            else: _log('> %s' % data)
+            if self.debug >= 4: self._mesg('> %r' % data)
+            else: self._log('> %s' % data)
         try:
             self._send('%s%s' % (data, CRLF))
             for o in options:
                 if __debug__:
-                    if self.debug >= 4: _mesg('> %r' % o)
-                    else: _log('> %r' % data)
+                    if self.debug >= 4: self._mesg('> %r' % o)
+                    else: self._log('> %r' % data)
                 self._send('%s%s' % (o, CRLF))
         except (socket.error, OSError), val:
             raise self.abort('socket error: %s' % val)
@@ -250,7 +251,7 @@ class MANAGESIEVE:
             size = int(self.mo.group('size'))
             if __debug__:
                 if self.debug >= 4:
-                    _mesg('read literal size %s' % size)
+                    self._mesg('read literal size %s' % size)
             return self._read(size), self._get_line()
         else:
             for i in range(len(data)):
@@ -298,7 +299,7 @@ class MANAGESIEVE:
                 typ, code, dat = self.mo.group('type','code','data')
                 if __debug__:
                     if self.debug >= 1:
-                        _mesg('%s response: %s %s' % (typ, code, dat))
+                        self._mesg('%s response: %s %s' % (typ, code, dat))
                 self.response_code = code
                 self.response_text = None
                 if dat:
@@ -317,9 +318,9 @@ class MANAGESIEVE:
                     dat1, resp = self._readstring(resp)
                     if __debug__:
                         if self.debug >= 4:
-                            _mesg('read: %r' % (dat1,))
+                            self._mesg('read: %r' % (dat1,))
                         if self.debug >= 5:
-                            _mesg('rest: %r' % (resp,))
+                            self._mesg('rest: %r' % (resp,))
                     dat.append(dat1)
                     if not resp.startswith(' '):
                         break
@@ -335,9 +336,38 @@ class MANAGESIEVE:
         self.mo = cre.match(s)
         if __debug__:
             if self.mo is not None and self.debug >= 5:
-                _mesg("\tmatched r'%s' => %s" % (cre.pattern, `self.mo.groups()`))
+                self._mesg("\tmatched r'%s' => %s" % (cre.pattern, `self.mo.groups()`))
         return self.mo is not None
 
+
+    if __debug__:
+
+        def _mesg(self, s, secs=None):
+            if secs is None:
+                secs = time.time()
+            tm = time.strftime('%M:%S', time.localtime(secs))
+            sys.stderr.write('  %s.%02d %s\n' % (tm, (secs*100)%100, s))
+            sys.stderr.flush()
+
+        def _log(self, line):
+            # Keep log of last `_cmd_log_len' interactions for debugging.
+            self._cmd_log[self._cmd_log_idx] = (line, time.time())
+            self._cmd_log_idx += 1
+            if self._cmd_log_idx >= self._cmd_log_len:
+                self._cmd_log_idx = 0
+
+        def print_log(self):
+            self.self._mesg('last %d SIEVE interactions:' % len(self._cmd_log))
+            i, n = self._cmd_log_idx, self._cmd_log_len
+            while n:
+                try:
+                    self.self._mesg(*self._cmd_log[i])
+                except:
+                    pass
+                i += 1
+                if i >= self._cmd_log_len:
+                    i = 0
+                n -= 1
 
     ### Public methods ###
     def authenticate(self, mechanism, *authobjects):
