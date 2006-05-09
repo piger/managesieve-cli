@@ -18,6 +18,10 @@ try:
 except ImportError:
     import StringIO
 
+try:
+    True
+except NameError:
+    True = 1==1; False is not True
 
 def make_string(string):
     return '{%d+}%s%s' % ( len(string), CRLF, string)
@@ -54,12 +58,12 @@ Scripts = [
 
 ListScripts = ['"%s"' % s for s in SieveNames] + \
               [make_string(s) for s in SieveNames]
-Script_List = [ (s, 0) for s in  SieveNames ] * 2
+Script_List = [ (s, False) for s in  SieveNames ] * 2
 ListScripts[2] = ListScripts[2] + " ACTIVE" # set one active
-Script_List[2] = (Script_List[2][0], 1)     # set one active
+Script_List[2] = (Script_List[2][0], True)  # set one active
 ListScripts = CRLF.join(ListScripts)
-#print ListScripts
-#print Script_List
+print ListScripts
+print Script_List
 
 RESP_OKAY       = 'Okay.'
 RESP_CODE_OKAY = 'RESP-OKAY/ALL'
@@ -175,6 +179,7 @@ class ManagesieveCommandsTest(CommandTester):
         global sieve
         sieve = TestSIEVE()
         sieve.state = 'AUTH'
+        sieve.debug = 0
         pass
 
 
