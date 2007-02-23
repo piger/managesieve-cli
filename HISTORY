@@ -1,10 +1,17 @@
+
+
 Version 0.4 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 unreleased
 -----------
 * managesieve:
-  - If a capability had no values (like 'STARTTLS'),
-    _parse_capabilities failed. Fixed.
+  - If a capability had no values (like 'STARTTLS'), parsing
+    capabilities failed. Fixed.
   - removed dependency on some imaplib's private functions
+  - fixed typo: self.supports_tls
+  - added support for STARTTLS
+
+  Thanks to Tomas 'Skitta' Lindroos, Lorenzo Boccaccia, Alain Spineux
+  and darkness for sending patches.
 
 Version 0.3 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 -----------

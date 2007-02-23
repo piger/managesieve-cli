@@ -10,6 +10,7 @@ Ulrich Eck <ueck@net-labs.de> April 2001
 """
 
 import binascii, re, socket, time, random, sys
+from smtplib import SSLFakeSocket, SSLFakeFile
 
 __all__ = [ 'MANAGESIEVE', 'SIEVE_PORT', 'OK', 'NO', 'BYE', 'Debug']
 
@@ -44,7 +45,7 @@ Oknobye = re.compile(r'(?P<type>(OK|NO|BYE))'
                      r'( \((?P<code>.*)\))?'
                      r'( (?P<data>.*))?')
 # draft-martin-managesieve-04.txt defines the size tag of literals to
-# contain a '+' (plus sign) behind teh digits, but timsieved does not
+# contain a '+' (plus sign) behind the digits, but timsieved does not
 # send one. Thus we are less strikt here:
 Literal = re.compile(r'.*{(?P<size>\d+)\+?}$')
 re_dquote  = re.compile(r'"(([^"\\]|\\.)*)"')
@@ -66,6 +67,10 @@ class MANAGESIEVE:
 
         host - host's name (default: localhost)
         port - port number (default: standard Sieve port).
+        
+        use_tls  - switch to TLS automatically, if server supports
+        keyfile  - keyfile to use for TLS (optional)
+        certfile - certfile to use for TLS (optional)
 
     All Sieve commands are supported by methods of the same
     name (in lower-case).
@@ -104,7 +109,8 @@ class MANAGESIEVE:
     class error(Exception): """Logical errors - debug required"""
     class abort(error):     """Service errors - close and retry"""
 
-    def __init__(self, host='', port=SIEVE_PORT):
+    def __init__(self, host='', port=SIEVE_PORT,
+                 use_tls=False, keyfile=None, certfile=None):
         self.host = host
         self.port = port
         self.debug = Debug
@@ -115,7 +121,7 @@ class MANAGESIEVE:
         self.capabilities = []
         self.loginmechs = []
         self.implementation = ''
-        self.supports_tsl = 0
+        self.supports_tls = 0
 
         # Open socket to server.
         self._open(host, port)
@@ -132,11 +138,18 @@ class MANAGESIEVE:
         typ, data = self._get_response()
         if typ == 'OK':
             self._parse_capabilities(data)
-        return
+            if use_tls and self.self.supports_tls:
+                self.starttls(keyfile=keyfile, certfile=certfile)
 
 
     def _parse_capabilities(self, lines):
-        for typ, data in lines:
+        for line in lines:
+            if len(line) == 2:
+                typ, data = line
+            else:
+                assert len(line) == 1, 'Bad Capabilities line: %r' % line
+                typ = line[0]
+                data = None
             if __debug__:
                 if self.debug >= 3:
                     self._mesg('%s: %r' % (typ, data))
@@ -146,8 +159,8 @@ class MANAGESIEVE:
                 self.loginmechs = data.split()
             elif typ == "SIEVE":
                 self.capabilities = data.split()
-            elif typ == "STARTTSL":
-                self.supports_tsl = 1
+            elif typ == "STARTTLS":
+                self.supports_tls = 1
             else:
                 # A client implementation MUST ignore any other
                 # capabilities given that it does not understand.
@@ -309,6 +322,11 @@ class MANAGESIEVE:
                 self.response_text = None
                 if dat:
                     self.response_text = self._readstring(dat)[0]
+
+                # if server quits here, send code instead of empty data
+                if typ == "BYE":
+                    return typ, code
+
                 return typ, data
 ##             elif 0:
 ##                 dat2 = None
@@ -488,7 +506,7 @@ class MANAGESIEVE:
                 self.implementation
                 self.loginmechs
                 self.capabilities
-                self.supports_tsl
+                self.supports_tls
         """
         # command-capability    = "CAPABILITY" CRLF
         # response-capability   = *(string [SP string] CRLF) response-oknobye
@@ -497,7 +515,21 @@ class MANAGESIEVE:
             self._parse_capabilities(data)
         return typ, data
 
-### not yet implemented: ###
 
-    # command-starttls      = "STARTTLS" CRLF
-    # response-starttls     = response-oknobye
+    def starttls(self, keyfile=None, certfile=None):
+        """Puts the connection to the SIEVE server into TLS mode.
+
+        If the server supports TLS, this will encrypt the rest of the SIEVE
+        session. If you provide the keyfile and certfile parameters,
+        the identity of the SIEVE server and client can be checked. This,
+        however, depends on whether the socket module really checks the
+        certificates.
+        """
+        # command-starttls      = "STARTTLS" CRLF
+        # response-starttls     = response-oknobye
+        typ, data = self._command('STARTTLS')
+        if typ == 'OK':
+            sslobj = socket.ssl(self.sock, keyfile, certfile)
+            self.sock = SSLFakeSocket(self.sock, sslobj)
+            self.file = SSLFakeFile(sslobj)
+        return typ, data
