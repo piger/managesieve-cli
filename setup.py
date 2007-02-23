@@ -2,7 +2,9 @@
 
 """Setup script for the managesieve"""
 
-from distutils.core import setup
+import ez_setup
+ez_setup.use_setuptools()
+from setuptools import setup
 
 description = "MANAGESIEVE client library for remotely managing Sieve scripts"
 long_description = """
@@ -15,7 +17,7 @@ http://www.ietf.org/internet-drafts/draft-martin-managesieve-04.txt .
 
 
 What is MANAGESIEVE?
---------------------
+---------------------
 
 Sieve scripts allow users to filter incoming email. Message stores are
 commonly sealed servers so users cannot log into them, yet users must
@@ -54,8 +56,8 @@ class MyBDist_RPM(bdist_rpm):
         bdist_rpm.finalize_options(self)
 
 
-setup (name = "python-managesieve",
-       version = "0.3",
+setup (name = "managesieve",
+       version = "0.4",
        description = description,
        long_description = long_description,
        author = "Hartmut Goebel",
@@ -84,7 +86,7 @@ setup (name = "python-managesieve",
           'Operating System :: OS Independent',
           'Programming Language :: Python',
           'Topic :: Communications :: Email',
-          'Topic :: Software Development :: Libraries :: Python Modules'
+          'Topic :: Software Development :: Libraries :: Python Modules',
           'Topic :: Utilities'
           ],
      )
