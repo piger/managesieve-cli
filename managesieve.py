@@ -403,9 +403,20 @@ class MANAGESIEVE:
         if not mech in self.loginmechs:
             raise self.error("Server doesn't allow %s authentication." % mech)
 
-        authobjects = [ sieve_name(binascii.b2a_base64(ao)[:-1])
-                        for ao in authobjects
-                        ]
+        if mech == 'LOGIN':
+            authobjects = [ sieve_name(binascii.b2a_base64(ao)[:-1])
+                            for ao in authobjects
+                            ]
+        elif mech == 'PLAIN':
+            if len(authobjects) < 3:
+                # assume authorization identity (authzid) is missing
+                # and these two authobjects are username and password
+                authobjects.insert(0, '')
+            ao = '\0'.join(authobjects)
+            ao = binascii.b2a_base64(ao)[:-1]
+            authobjects = [ sieve_string(ao) ]
+        else:
+            raise self.error("managesieve doesn't support %s authentication." % mech)
                 
         typ, data = self._command('AUTHENTICATE',
                                   sieve_name(mech), *authobjects)
