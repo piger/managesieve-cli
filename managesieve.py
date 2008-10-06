@@ -29,6 +29,7 @@ BYE = 'BYE'
 #    Commands
 commands = {
     # name          valid states
+    'STARTTLS':     ('NONAUTH',),
     'AUTHENTICATE': ('NONAUTH',),
     'LOGOUT':       ('NONAUTH', 'AUTH', 'LOGOUT'),
     'CABABILTY':    ('NONAUTH', 'AUTH'),
@@ -109,6 +110,13 @@ class MANAGESIEVE:
     class error(Exception): """Logical errors - debug required"""
     class abort(error):     """Service errors - close and retry"""
 
+    def __clear_knowledge(self):
+        """clear/init any knowledge obtained from the server"""
+        self.capabilities = []
+        self.loginmechs = []
+        self.implementation = ''
+        self.supports_tls = 0
+
     def __init__(self, host='', port=SIEVE_PORT,
                  use_tls=False, keyfile=None, certfile=None):
         self.host = host
@@ -117,17 +125,11 @@ class MANAGESIEVE:
         self.state = 'NONAUTH'
 
         self.response_text = self.response_code = None
+        self.__clear_knowledge()
         
-        self.capabilities = []
-        self.loginmechs = []
-        self.implementation = ''
-        self.supports_tls = 0
-
         # Open socket to server.
         self._open(host, port)
 
-        # Get server welcome message,
-        # request and store CAPABILITY response.
         if __debug__:
             self._cmd_log_len = 10
             self._cmd_log_idx = 0
@@ -135,11 +137,15 @@ class MANAGESIEVE:
             if self.debug >= 1:
                 self._mesg('managesieve version %s' % __version__)
 
+        # Get server welcome message,
+        # request and store CAPABILITY response.
         typ, data = self._get_response()
         if typ == 'OK':
             self._parse_capabilities(data)
-            if use_tls and self.self.supports_tls:
-                self.starttls(keyfile=keyfile, certfile=certfile)
+        if use_tls and self.supports_tls:
+            typ, data = self.starttls(keyfile=keyfile, certfile=certfile)
+            if typ == 'OK':
+                self._parse_capabilities(data)
 
 
     def _parse_capabilities(self, lines):
@@ -543,4 +549,6 @@ class MANAGESIEVE:
             sslobj = socket.ssl(self.sock, keyfile, certfile)
             self.sock = SSLFakeSocket(self.sock, sslobj)
             self.file = SSLFakeFile(sslobj)
+            # MUST discard knowledge obtained from the server
+            self.__clear_knowledge()
         return typ, data
