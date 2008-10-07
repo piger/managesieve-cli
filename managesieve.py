@@ -597,4 +597,6 @@ class MANAGESIEVE:
             self.file = SSLFakeFile(sslobj)
             # MUST discard knowledge obtained from the server
             self.__clear_knowledge()
+            typ, data = self._get_response()
+            if self.debug >= 3: self._mesg('started Transport Layer Security (TLS)')
         return typ, data
