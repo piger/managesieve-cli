@@ -247,6 +247,9 @@ def shell(auth, user=None, passwd=None, realm=None,
                     pass
                 else:
                     print result, sieve.response_text or sieve.response_code
+                    if result == "BYE":
+                        # quit when server send BYE
+                        cmd_quit()
 
     global sieve
     try:
