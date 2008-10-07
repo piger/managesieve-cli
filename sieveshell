@@ -75,7 +75,11 @@ def cmd_put(filename, scriptname=None):
     """put <filename> [<target name>]
                  - upload script to server"""
     if not scriptname: scriptname = filename
-    scriptdata = open(filename).read()
+    try:
+        scriptdata = open(filename).read()
+    except IOError, e:
+        print "Can't read local file %s:" % filename, e.args[1]
+        return SUPPRESS
     return sieve.putscript(scriptname, scriptdata)
 
 
@@ -85,7 +89,11 @@ def cmd_get(scriptname, filename=None):
     res, scriptdata = sieve.getscript(scriptname)
     if res == 'OK':
         if filename:
-            open(filename, 'w').write(scriptdata)
+            try:
+                open(filename, 'w').write(scriptdata)
+            except IOError, e:
+                print "Can't write local file %s:" % filename, e.args[1]
+                return SUPPRESS
         else:
             print scriptdata
             res = SUPPRESS
@@ -189,7 +197,12 @@ def cmd_deactivate():
 def cmd_quit(*args):
     """quit             - quit"""
     print 'quitting.'
-    if sieve: sieve.logout()
+    if sieve:
+        try:
+            # this mysteriously fails at times
+            sieve.logout()
+        except:
+            pass
     raise SystemExit()
 
 
