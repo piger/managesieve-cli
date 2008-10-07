@@ -481,9 +481,17 @@ class MANAGESIEVE:
 
 
     def login(self, auth, user, password):
-        """ Login to the Sieve server using mechanism LOGIN. """
-        return self.authenticate('LOGIN', user, password)
-
+        """
+        Authenticate to the Sieve server using the best mechanism available.
+        """
+        for authmech in AUTHMECHS:
+            if authmech in self.loginmechs:
+                authobjs = [auth, user, password]
+                if authmech == AUTH_LOGIN:
+                    authobjs = [user, password]
+                return self.authenticate(authmech, *authobjs)
+        else:
+            raise self.abort('No matching authentication mechanism found.')
 
     def logout(self):
         """Terminate connection to server."""
