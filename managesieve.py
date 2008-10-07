@@ -21,6 +21,9 @@ OK = 'OK'
 NO = 'NO'
 BYE = 'BYE'
 
+# authentication mechanisms currently supported
+AUTHMECHS = ['LOGIN', 'PLAIN']
+
 # todo: return results or raise exceptions?
 # todo: on result 'BYE' quit immediatly
 # todo: raise exception on 'BYE'?
