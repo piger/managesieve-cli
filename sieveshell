@@ -212,7 +212,7 @@ __command_map = {
 
 
 def shell(auth, user=None, passwd=None, realm=None,
-          authmech='LOGIN', server=''):
+          authmech='LOGIN', server='', use_tls=0):
     """Main part"""
 
     def cmd_loop():
@@ -254,7 +254,7 @@ def shell(auth, user=None, passwd=None, realm=None,
         if not auth: auth = getpass.getuser()
         if not user: user = auth
         if not passwd: passwd = getpass.getpass()
-        sieve = managesieve.MANAGESIEVE(server, use_tls=1)
+        sieve = managesieve.MANAGESIEVE(server, use_tls=use_tls)
         print 'Server capabilities:',
         for c in sieve.capabilities: print c,
         print
@@ -299,6 +299,8 @@ def main():
     parser.add_option('--script', '--script-file',
                       help= "Instead of working interactively, run "
                             "commands from SCRIPT, and exit when done.")
+    parser.add_option('--use-tls', '--tls', action="store_true",
+                      help="Switch to TLS if server supports it.")
     options, args = parser.parse_args()
 
     if not options.auth_mech.upper() in managesieve.AUTHMECHS:
@@ -309,7 +311,7 @@ def main():
     server = args[0]
 
     shell(options.authname, options.passwd, options.username,
-          options.realm, options.auth_mech, server)
+          options.realm, options.auth_mech, server, options.use_tls)
     return 0
 
 
