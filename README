@@ -2,7 +2,7 @@ Announcing:
 
                           managesieve
                          =============
-                          Version 0.3
+                          Version 0.4
 
 
 A MANGAGESIEVE client library for remotely managing Sieve scripts,
@@ -12,17 +12,25 @@ This module allows accessing a Sieve-Server for managing Sieve scripts
 there. For more information about the MANAGESIEVE protocol see draft
 http://www.ietf.org/internet-drafts/draft-martin-managesieve-04.txt .
 
-Changes since 0.2
+Changes since 0.3
 -----------------
 * managesieve:
-  - MANAGESIEVE.authenticate() now only returns a OK/NO/BYE result
-    like any command not asking data from the server
+  - now work with Python 2.3 and later
+  - added support for TLS (STARTTLS)
+  - added support for PLAIN authentication
+  - use optparse if available instead of optik.
+  - API change: login() no longer uses the LOGIN authentication
+    mechanism, but has become a convenient function. It uses the best
+    mechanism available for authenticating the user.
+  - Several Bugfixes, see HISTORY for details.
+
+  Thanks to Tomas 'Skitta' Lindroos, Lorenzo Boccaccia, Alain Spineux,
+  darkness and Gregory Boyce for sending patches.
 
 * sieveshell:
-  - added 'edit', which may create scripts, too. (posix only)
-  - now prints out the server capabilities, thus the user knows what
-    ther server is capable of (and which Sieve-Commands may be used).
-  - fixed some minor bugs
+  - added support for different authentication mechanisms
+  - added option --start-tls
+  - several other enhancements and bugfixes
 
 
 What is MANAGESIEVE?
@@ -39,11 +47,12 @@ This an interim measure as it is hoped that eventually Sieve scripts
 will be stored on ACAP.
 
 
-Availablity
+Availability
 -----------
 
 'managesieve' is available for download at
-http://www.crazy-compilers.com/py-lib/managesieve.html
+http://python-managesieve.origo.ethz.ch/
+
 
 Requirements
 ------------
@@ -54,15 +63,13 @@ Requires Python >= 2.0
 Not yet implemented
 -------------------
 
-- Only athentication method LOGIN is currently supported.
-- STARTTLS is not yet implemented.
 - sieve-names are only quoted dump (put into quotes, but no escapes yet).
 
 
 Copyright/License
 -----------------
 
-(C) Copyright 2003 by Hartmut Goebel <h.goebel@crazy-compilers.com>
+(C) Copyright 2003,2008 by Hartmut Goebel <h.goebel@crazy-compilers.com>
 
 License: Python Software Foundation License
          http://www.opensource.org/licenses/PythonSoftFoundation.html

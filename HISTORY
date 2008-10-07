@@ -1,17 +1,33 @@
 
 
 Version 0.4 by Hartmut Goebel <h.goebel at crazy-compilers.com>
-unreleased
 -----------
 * managesieve:
+  - now work with Python 2.3 and later
+  - added support for TLS (STARTTLS)
+  - added support for PLAIN authentication
+  - use optparse if available instead of optik.
+  - API change: login() no longer uses the LOGIN authentication
+    mechanism, but has become a convenient function. It uses the best
+    mechanism available for authenticating the user.
+
+  Bugfixes:
   - If a capability had no values (like 'STARTTLS'), parsing
     capabilities failed. Fixed.
   - removed dependency on some imaplib's private functions
   - fixed typo: self.supports_tls
-  - added support for STARTTLS
 
-  Thanks to Tomas 'Skitta' Lindroos, Lorenzo Boccaccia, Alain Spineux
-  and darkness for sending patches.
+  Thanks to Tomas 'Skitta' Lindroos, Lorenzo Boccaccia, Alain Spineux,
+  darkness and Gregory Boyce for sending patches.
+
+* sieveshell:
+  - added support for different authentication mechanisms
+  - added option --start-tls
+  - more verbose output when server says "BYE" (prints out referrals
+    etc.)
+  - automatic cmd_quit() when server says "BYE"
+  - several minor bugfixes and enhancements
+
 
 Version 0.3 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 -----------
@@ -22,14 +38,15 @@ Version 0.3 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 * sieveshell:
   - added 'edit', which may create scripts, too. (posix only)
   - now prints out the server capabilities, thus the user knows what
-    ther server is capable of (and which Sieve-Commands may be used).
+    the server is capable of (and which Sieve-Commands may be used).
   - fixed some minor bugs
+
 
 Version 0.2 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 -----------
 - renamed to 'managesieve'
 - added sieveshell
-- major overhoul
+- major overhaul
 - added support for HAVESPACE, CAPABILITY
 - added unittest testsuite (covers most cases)
 

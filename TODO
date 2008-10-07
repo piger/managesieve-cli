@@ -1,12 +1,10 @@
 sieveshell
 ----------
 - add option 'debuglevel'
-- add option 'authmech'
 
 managesievelib:
 ---------------
-- authentication schemes beside 'LOGIN', esp. 'PLAIN'
-- on result 'BYE' quit immediatly
+- more authentication schemes 
 - raise exception on 'BYE'?
 - sieve_name(): correct quoting
 

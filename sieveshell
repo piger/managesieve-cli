@@ -27,7 +27,7 @@ The following commands are recognized:
   quit             - quit
 """
 
-__version__ = "0.3"
+__version__ = "0.4"
 __author__ = "Hartmut Goebel <h.goebel@crazy-compilers.com>"
 __copyright = "(c) Coypright 2003 by Hartmut Goebel <h.goebel@crazy-compilers.com>"
 __license__ = "GPL"
