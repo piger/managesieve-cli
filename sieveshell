@@ -4,12 +4,15 @@ sieveshell - remotely manipulate sieve scripts
 
 SYNOPSIS
        sieveshell [--user=user] [--authname=authname] [--realm=realm]
-       [--exec=script] server
+       [--exec=script] [--auth-mech=mechanism] server
 
        sieveshell --help
 
 sieveshell allows users to manipulate their scripts on a remote server.
 It works via MANAGESIEVE, a work in progress protocol.
+
+Use --help to get a list of the currently supported authentication
+mechanisms.
 
 The following commands are recognized:
   list             - list scripts on server
@@ -208,7 +211,8 @@ __command_map = {
     }
 
 
-def shell(auth, user=None, passwd=None, realm=None, server=''):
+def shell(auth, user=None, passwd=None, realm=None,
+          authmech='LOGIN', server=''):
     """Main part"""
 
     def cmd_loop():
@@ -250,11 +254,19 @@ def shell(auth, user=None, passwd=None, realm=None, server=''):
         if not auth: auth = getpass.getuser()
         if not user: user = auth
         if not passwd: passwd = getpass.getpass()
-        sieve = managesieve.MANAGESIEVE(server)
+        sieve = managesieve.MANAGESIEVE(server, use_tls=1)
         print 'Server capabilities:',
         for c in sieve.capabilities: print c,
         print
-        res = sieve.login(auth, user, passwd)
+        try:
+            if authmech.upper() == 'LOGIN':
+                # LOGIN does not support authenticator
+                res = sieve.authenticate(authmech, user, passwd)
+            else:
+                res = sieve.authenticate(authmech, auth, user, passwd)
+        except sieve.error, e:
+            print "Authenticate error: %s" % e
+            cmd_quit()
         if res != 'OK':
             print res, sieve.response_text or sieve.response_code
             cmd_quit()
@@ -284,16 +296,24 @@ def main():
                       help = ("The the password."))
     parser.add_option('--realm', type="string", dest='realm',
                       help= "The realm to attempt authentication in.")
+    parser.add_option('--auth-mech', type="string", dest='authmech',
+                      default="login",
+                      help= "The SASL authentication mechanism to use "
+                            "(default: %%default; available: %s)." %  ', '.join(managesieve.AUTHMECHS).lower())
     parser.add_option('--script', type="string", dest='script',
                       help= ("Instead of working interactively, run "
                              "commands from SCRIPT, and exit when done."))
     options, args = parser.parse_args()
+
+    if not options.authmech.upper() in managesieve.AUTHMECHS:
+        parser.error("Authentication mechanism %s is nor supported. Use one of %s", options.authmech.upper(), ', '.join(managesieve.AUTHMECHS))
+
     if len(args) != 1:
         parser.error("Argument 'server' missing.")
     server = args[0]
 
     shell(options.authname, options.passwd, options.username,
-          options.realm, server)
+          options.realm, options.authmech, server)
     return 0
 
 
