@@ -233,7 +233,12 @@ def shell(auth, user=None, passwd=None, realm=None,
         global sieve
         while 1:
             sys.stdout.write('> ')
-            line = sys.stdin.readline().strip()
+            line = sys.stdin.readline()
+            if not line:
+                # EOF/control-d
+                cmd_quit()
+                break
+            line = line.strip()
             if not line: continue
             # todo: parse command line correctly
             line = line.split()
@@ -267,9 +272,14 @@ def shell(auth, user=None, passwd=None, realm=None,
     global sieve
     try:
         print 'connecting to', server
-        if not auth: auth = getpass.getuser()
-        if not user: user = auth
-        if not passwd: passwd = getpass.getpass()
+        try:
+            if not auth: auth = getpass.getuser()
+            if not user: user = auth
+            if not passwd: passwd = getpass.getpass()
+        except EOFError:
+            # Ctrl-D pressed
+            print # clear line
+            return
         sieve = managesieve.MANAGESIEVE(server, use_tls=use_tls)
         print 'Server capabilities:',
         for c in sieve.capabilities: print c,
