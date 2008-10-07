@@ -21,8 +21,11 @@ OK = 'OK'
 NO = 'NO'
 BYE = 'BYE'
 
+AUTH_PLAIN = "PLAIN"
+AUTH_LOGIN = "LOGIN"
 # authentication mechanisms currently supported
-AUTHMECHS = ['LOGIN', 'PLAIN']
+# in order of preference
+AUTHMECHS = [AUTH_PLAIN, AUTH_LOGIN]
 
 # todo: return results or raise exceptions?
 # todo: on result 'BYE' quit immediatly
@@ -455,11 +458,11 @@ class MANAGESIEVE:
         if not mech in self.loginmechs:
             raise self.error("Server doesn't allow %s authentication." % mech)
 
-        if mech == 'LOGIN':
+        if mech == AUTH_LOGIN:
             authobjects = [ sieve_name(binascii.b2a_base64(ao)[:-1])
                             for ao in authobjects
                             ]
-        elif mech == 'PLAIN':
+        elif mech == AUTH_PLAIN:
             if len(authobjects) < 3:
                 # assume authorization identity (authzid) is missing
                 # and these two authobjects are username and password
@@ -469,7 +472,7 @@ class MANAGESIEVE:
             authobjects = [ sieve_string(ao) ]
         else:
             raise self.error("managesieve doesn't support %s authentication." % mech)
-                
+
         typ, data = self._command('AUTHENTICATE',
                                   sieve_name(mech), *authobjects)
         if typ == 'OK':
