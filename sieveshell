@@ -190,7 +190,7 @@ def cmd_quit(*args):
     """quit             - quit"""
     print 'quitting.'
     if sieve: sieve.logout()
-    sys.exit(0)
+    raise SystemExit()
 
 
 # find all commands (using  introspection)
@@ -283,40 +283,36 @@ def main():
     except ImportError:
         from optik import OptionParser
     parser = OptionParser('Usage: %prog [options] server')
-    parser.add_option('--authname', type="string", dest='authname',
-                      help= ("The user to use for authentication "
-                             "(defaults to current user)."))
-    parser.add_option('--user', default=None,
-                      type="string", dest='username',
-                      help = ("The authorization name to request; "
-                              "by default, derived from the "
-                              "authentication credentials."))
-    parser.add_option('--passwd', default=None,
-                      type="string", dest='passwd',
-                      help = ("The the password."))
-    parser.add_option('--realm', type="string", dest='realm',
+    parser.add_option('--authname',
+                      help= "The user to use for authentication "
+                            "(defaults to current user).")
+    parser.add_option('--user', dest='username',
+                      help = "The authorization name to request; "
+                             "by default, derived from the "
+                             "authentication credentials.")
+    parser.add_option('--passwd', help = "The password to use.")
+    parser.add_option('--realm',
                       help= "The realm to attempt authentication in.")
-    parser.add_option('--auth-mech', type="string", dest='authmech',
-                      default="login",
+    parser.add_option('--auth-mech', default="LOGIN",
                       help= "The SASL authentication mechanism to use "
-                            "(default: %%default; available: %s)." %  ', '.join(managesieve.AUTHMECHS).lower())
-    parser.add_option('--script', type="string", dest='script',
-                      help= ("Instead of working interactively, run "
-                             "commands from SCRIPT, and exit when done."))
+                            "(default: %%default; available: %s)." %  ', '.join(managesieve.AUTHMECHS))
+    parser.add_option('--script', '--script-file',
+                      help= "Instead of working interactively, run "
+                            "commands from SCRIPT, and exit when done.")
     options, args = parser.parse_args()
 
-    if not options.authmech.upper() in managesieve.AUTHMECHS:
-        parser.error("Authentication mechanism %s is nor supported. Use one of %s", options.authmech.upper(), ', '.join(managesieve.AUTHMECHS))
+    if not options.auth_mech.upper() in managesieve.AUTHMECHS:
+        parser.error("Authentication mechanism %s is not supported. Choose one of %s" % (options.auth_mech.upper(), ', '.join(managesieve.AUTHMECHS)))
 
     if len(args) != 1:
         parser.error("Argument 'server' missing.")
     server = args[0]
 
     shell(options.authname, options.passwd, options.username,
-          options.realm, options.authmech, server)
+          options.realm, options.auth_mech, server)
     return 0
 
 
 if __name__ == "__main__":
     #managesieve.Debug = 4
-    sys.exit(main())
+    raise SystemExit(main())
