@@ -339,7 +339,7 @@ def main():
         parser.error("Argument 'server' missing.")
     server = args[0]
 
-    shell(options.authname, options.passwd, options.username,
+    shell(options.authname, options.username, options.passwd,
           options.realm, options.auth_mech, server, options.use_tls)
     return 0
 
