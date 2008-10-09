@@ -37,7 +37,7 @@ commands = {
     'STARTTLS':     ('NONAUTH',),
     'AUTHENTICATE': ('NONAUTH',),
     'LOGOUT':       ('NONAUTH', 'AUTH', 'LOGOUT'),
-    'CABABILTY':    ('NONAUTH', 'AUTH'),
+    'CAPABILITY':   ('NONAUTH', 'AUTH'),
     'GETSCRIPT':    ('AUTH', ),
     'PUTSCRIPT':    ('AUTH', ),
     'SETACTIVE':    ('AUTH', ),
