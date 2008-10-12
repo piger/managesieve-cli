@@ -44,6 +44,8 @@ commands = {
     'DELETESCRIPT': ('AUTH', ),
     'LISTSCRIPTS':  ('AUTH', ),
     'HAVESPACE':    ('AUTH', ),
+    # bogus command to receive a NO after STARTTLS (see starttls() )
+    'BOGUS':         ('NONAUTH', 'AUTH', 'LOGOUT'),
     }
 
 ### needed
@@ -608,6 +610,14 @@ class MANAGESIEVE:
             self.file = SSLFakeFile(sslobj)
             # MUST discard knowledge obtained from the server
             self.__clear_knowledge()
-            typ, data = self._get_response()
+            # Some servers send capabilities after TLS handshake, some
+            # do not. We send a bogus command, and expect a NO. If you
+            # get something else instead, read the extra NO to clear
+            # the buffer.
+            typ, data = self._command('BOGUS')
+            if typ != 'NO': 
+                typ, data = self._get_response()
+            # server may not advertise capabilities, thus we need to ask
+            self.capability()
             if self.debug >= 3: self._mesg('started Transport Layer Security (TLS)')
         return typ, data
