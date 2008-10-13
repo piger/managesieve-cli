@@ -1,14 +1,14 @@
 
-
 Version 0.4 by Hartmut Goebel <h.goebel at crazy-compilers.com>
------------
-* managesieve:
+--------------------------------------------------------------------
+:managesieve:
   - now work with Python 2.3 and later
-  - added support for TLS (STARTTLS)
+  - added support for TLS (STARTTLS), special thanks to Gregory Boyce
+    for fixing some corner cases here
   - added support for PLAIN authentication
   - use optparse if available instead of optik.
   - API change: login() no longer uses the LOGIN authentication
-    mechanism, but has become a convenient function. It uses the best
+    mechanism, but has become a  convenience function. It uses the best
     mechanism available for authenticating the user.
 
   Bugfixes:
@@ -20,7 +20,7 @@ Version 0.4 by Hartmut Goebel <h.goebel at crazy-compilers.com>
   Thanks to Tomas 'Skitta' Lindroos, Lorenzo Boccaccia, Alain Spineux,
   darkness and Gregory Boyce for sending patches.
 
-* sieveshell:
+:sieveshell:
   - added support for different authentication mechanisms
   - added option --start-tls
   - more verbose output when server says "BYE" (prints out referrals
@@ -30,12 +30,12 @@ Version 0.4 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 
 
 Version 0.3 by Hartmut Goebel <h.goebel at crazy-compilers.com>
------------
-* managesieve:
+--------------------------------------------------------------------
+:managesieve:
   - MANAGESIEVE.authenticate() now only returns a OK/NO/BYE result
     like any command not asking data from the server
 
-* sieveshell:
+:sieveshell:
   - added 'edit', which may create scripts, too. (posix only)
   - now prints out the server capabilities, thus the user knows what
     the server is capable of (and which Sieve-Commands may be used).
@@ -43,7 +43,7 @@ Version 0.3 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 
 
 Version 0.2 by Hartmut Goebel <h.goebel at crazy-compilers.com>
------------
+--------------------------------------------------------------------
 - renamed to 'managesieve'
 - added sieveshell
 - major overhaul
@@ -52,6 +52,6 @@ Version 0.2 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 
 
 Version 0.1 by Ulrich Eck <ueck at net-labs.de>
------------
+--------------------------------------------------------------------
 - initial release of Sieve.py by Ulrich Eck as part of 'ImapClient'
   (see http://www.zope.org/Members/jack-e/ImapClient), a Zope product.

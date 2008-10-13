@@ -1,54 +1,45 @@
-Announcing:
+managesieve 0.4
+================
 
-                          managesieve
-                         =============
-                          Version 0.4
+A ManageSieve client library for remotely managing Sieve scripts,
+including an user application (the interactive 'sieveshell').
 
-
-A MANGAGESIEVE client library for remotely managing Sieve scripts,
-including an interactive 'sieveshell'.
+Sieve scripts allow users to filter incoming email on the mail server.
+The ManageSieve protocol allows managing Sieve scripts on a remote
+mail server. These servers are commonly sealed so users cannot log
+into them, yet users must be able to update their scripts on them.
+This is what for the "ManageSieve" protocol is. For more information
+about the ManageSieve protocol see `the ManageSieve Internet draft
+<http://www.ietf.org/internet-drafts/draft-martin-managesieve-07.txt>`_.
 
 This module allows accessing a Sieve-Server for managing Sieve scripts
-there. For more information about the MANAGESIEVE protocol see draft
-http://www.ietf.org/internet-drafts/draft-martin-managesieve-04.txt .
+there. It is accompanied by a simple yet functional user application
+'sieveshell'.
+
 
 Changes since 0.3
 -----------------
-* managesieve:
-  - now work with Python 2.3 and later
-  - added support for TLS (STARTTLS)
+:managesieve:
+  - now works with Python 2.3 and later
+  - added support for TLS (STARTTLS), special thanks to Gregory Boyce
+    for fixing some corner cases here
   - added support for PLAIN authentication
   - use optparse if available instead of optik.
   - API change: login() no longer uses the LOGIN authentication
-    mechanism, but has become a convenient function. It uses the best
+    mechanism, but has become a convenience function. It uses the best
     mechanism available for authenticating the user.
   - Several Bugfixes, see HISTORY for details.
 
   Thanks to Tomas 'Skitta' Lindroos, Lorenzo Boccaccia, Alain Spineux,
   darkness and Gregory Boyce for sending patches.
 
-* sieveshell:
+:sieveshell:
   - added support for different authentication mechanisms
   - added option --start-tls
   - several other enhancements and bugfixes
 
-
-What is MANAGESIEVE?
---------------------
-
-Sieve scripts allow users to filter incoming email. Message stores are
-commonly sealed servers so users cannot log into them, yet users must
-be able to update their scripts on them. This module implements a
-protocol "managesieve" for securely managing Sieve scripts on a remote
-server. This protocol allows a user to have multiple scripts, and also
-alerts a user to syntactically flawed scripts.
-
-This an interim measure as it is hoped that eventually Sieve scripts
-will be stored on ACAP.
-
-
 Availability
------------
+-------------
 
 'managesieve' is available for download at
 http://python-managesieve.origo.ethz.ch/
@@ -57,7 +48,7 @@ http://python-managesieve.origo.ethz.ch/
 Requirements
 ------------
 
-Requires Python >= 2.0
+managesieve requires Python >= 2.0
 
 
 Not yet implemented
@@ -69,7 +60,7 @@ Not yet implemented
 Copyright/License
 -----------------
 
-(C) Copyright 2003,2008 by Hartmut Goebel <h.goebel@crazy-compilers.com>
+Copyright (C) 2003,2008 by Hartmut Goebel <h.goebel@crazy-compilers.com>
 
 License: Python Software Foundation License
          http://www.opensource.org/licenses/PythonSoftFoundation.html
@@ -86,3 +77,6 @@ Zope product.
 
 Some ideas taken from imaplib written by Piers Lauder
 <piers@cs.su.oz.au> et al.
+
+Thanks to Tomas 'Skitta' Lindroos, Lorenzo Boccaccia, Alain Spineux,
+darkness and Gregory Boyce for sending patches.

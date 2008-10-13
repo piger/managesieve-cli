@@ -2,13 +2,14 @@ sieveshell
 ----------
 - add option 'debuglevel'
 
-managesievelib:
+managesievelib
 ---------------
-- more authentication schemes 
+- more authentication schemes
 - raise exception on 'BYE'?
 - sieve_name(): correct quoting
+- update to draft 14
 
-test_sievelib.py:
+test_sievelib.py
 ----------------
 - authenticate/login
 - capability
