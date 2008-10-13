@@ -1,11 +1,15 @@
-managesievelib:
+sieveshell
+----------
+- add option 'debuglevel'
+
+managesievelib
 ---------------
-- on result 'BYE' quit immediatly
+- more authentication schemes
 - raise exception on 'BYE'?
 - sieve_name(): correct quoting
-- authentication schemes beside 'LOGIN'
+- update to draft 14
 
-test_sievelib.py:
+test_sievelib.py
 ----------------
 - authenticate/login
 - capability

@@ -4,7 +4,7 @@ A Protocol for Remotely Managing Sieve Scripts
 Based on <draft-martin-managesieve-04.txt>
 """
 
-__version__ = "0.2"
+__version__ = "0.4"
 __author__ = """Hartmut Goebel <h.goebel@crazy-compilers.com>
 Ulrich Eck <ueck@net-labs.de> April 2001
 """
@@ -12,8 +12,6 @@ Ulrich Eck <ueck@net-labs.de> April 2001
 import binascii, re, socket, time, random, sys
 
 __all__ = [ 'MANAGESIEVE', 'SIEVE_PORT', 'OK', 'NO', 'BYE', 'Debug']
-
-from imaplib import _log, _mesg
 
 Debug = 0
 CRLF = '\r\n'
@@ -23,6 +21,12 @@ OK = 'OK'
 NO = 'NO'
 BYE = 'BYE'
 
+AUTH_PLAIN = "PLAIN"
+AUTH_LOGIN = "LOGIN"
+# authentication mechanisms currently supported
+# in order of preference
+AUTHMECHS = [AUTH_PLAIN, AUTH_LOGIN]
+
 # todo: return results or raise exceptions?
 # todo: on result 'BYE' quit immediatly
 # todo: raise exception on 'BYE'?
@@ -30,15 +34,18 @@ BYE = 'BYE'
 #    Commands
 commands = {
     # name          valid states
+    'STARTTLS':     ('NONAUTH',),
     'AUTHENTICATE': ('NONAUTH',),
     'LOGOUT':       ('NONAUTH', 'AUTH', 'LOGOUT'),
-    'CABABILTY':    ('NONAUTH', 'AUTH'),
+    'CAPABILITY':   ('NONAUTH', 'AUTH'),
     'GETSCRIPT':    ('AUTH', ),
     'PUTSCRIPT':    ('AUTH', ),
     'SETACTIVE':    ('AUTH', ),
     'DELETESCRIPT': ('AUTH', ),
     'LISTSCRIPTS':  ('AUTH', ),
     'HAVESPACE':    ('AUTH', ),
+    # bogus command to receive a NO after STARTTLS (see starttls() )
+    'BOGUS':         ('NONAUTH', 'AUTH', 'LOGOUT'),
     }
 
 ### needed
@@ -46,11 +53,55 @@ Oknobye = re.compile(r'(?P<type>(OK|NO|BYE))'
                      r'( \((?P<code>.*)\))?'
                      r'( (?P<data>.*))?')
 # draft-martin-managesieve-04.txt defines the size tag of literals to
-# contain a '+' (plus sign) behind teh digits, but timsieved does not
+# contain a '+' (plus sign) behind the digits, but timsieved does not
 # send one. Thus we are less strikt here:
 Literal = re.compile(r'.*{(?P<size>\d+)\+?}$')
 re_dquote  = re.compile(r'"(([^"\\]|\\.)*)"')
 re_esc_quote = re.compile(r'\\([\\"])')
+
+
+class SSLFakeSocket:
+    """A fake socket object that really wraps a SSLObject.
+    
+    It only supports what is needed in managesieve.
+    """
+    def __init__(self, realsock, sslobj):
+        self.realsock = realsock
+        self.sslobj = sslobj
+
+    def send(self, str):
+        self.sslobj.write(str)
+        return len(str)
+
+    sendall = send
+
+    def close(self):
+        self.realsock.close()
+
+class SSLFakeFile:
+    """A fake file like object that really wraps a SSLObject.
+
+    It only supports what is needed in managesieve.
+    """
+    def __init__(self, sslobj):
+        self.sslobj = sslobj
+
+    def readline(self):
+        str = ""
+        chr = None
+        while chr != "\n":
+            chr = self.sslobj.read(1)
+            str += chr
+        return str
+
+    def read(self, size=0):
+        if size == 0:
+            return ''
+        else:
+            return self.sslobj.read(size)
+
+    def close(self):
+        pass
 
 
 def sieve_name(name):
@@ -68,6 +119,10 @@ class MANAGESIEVE:
 
         host - host's name (default: localhost)
         port - port number (default: standard Sieve port).
+        
+        use_tls  - switch to TLS automatically, if server supports
+        keyfile  - keyfile to use for TLS (optional)
+        certfile - certfile to use for TLS (optional)
 
     All Sieve commands are supported by methods of the same
     name (in lower-case).
@@ -106,47 +161,63 @@ class MANAGESIEVE:
     class error(Exception): """Logical errors - debug required"""
     class abort(error):     """Service errors - close and retry"""
 
-    def __init__(self, host='', port=SIEVE_PORT):
+    def __clear_knowledge(self):
+        """clear/init any knowledge obtained from the server"""
+        self.capabilities = []
+        self.loginmechs = []
+        self.implementation = ''
+        self.supports_tls = 0
+
+    def __init__(self, host='', port=SIEVE_PORT,
+                 use_tls=False, keyfile=None, certfile=None):
         self.host = host
         self.port = port
         self.debug = Debug
         self.state = 'NONAUTH'
 
         self.response_text = self.response_code = None
+        self.__clear_knowledge()
         
-        self.capabilities = []
-        self.loginmechs = []
-        self.implementation = ''
-        self.supports_tsl = 0
-
         # Open socket to server.
         self._open(host, port)
 
+        if __debug__:
+            self._cmd_log_len = 10
+            self._cmd_log_idx = 0
+            self._cmd_log = {}           # Last `_cmd_log_len' interactions
+            if self.debug >= 1:
+                self._mesg('managesieve version %s' % __version__)
+
         # Get server welcome message,
         # request and store CAPABILITY response.
-        if __debug__:
-            if self.debug >= 1:
-                _mesg('managesieve version %s' % __version__)
-
         typ, data = self._get_response()
         if typ == 'OK':
             self._parse_capabilities(data)
-        return
+        if use_tls and self.supports_tls:
+            typ, data = self.starttls(keyfile=keyfile, certfile=certfile)
+            if typ == 'OK':
+                self._parse_capabilities(data)
 
 
     def _parse_capabilities(self, lines):
-        for typ, data in lines:
+        for line in lines:
+            if len(line) == 2:
+                typ, data = line
+            else:
+                assert len(line) == 1, 'Bad Capabilities line: %r' % line
+                typ = line[0]
+                data = None
             if __debug__:
                 if self.debug >= 3:
-                    _mesg('%s: %r' % (typ, data))
+                    self._mesg('%s: %r' % (typ, data))
             if typ == "IMPLEMENTATION":
                 self.implementation = data
             elif typ == "SASL":
                 self.loginmechs = data.split()
             elif typ == "SIEVE":
                 self.capabilities = data.split()
-            elif typ == "STARTTSL":
-                self.supports_tsl = 1
+            elif typ == "STARTTLS":
+                self.supports_tls = 1
             else:
                 # A client implementation MUST ignore any other
                 # capabilities given that it does not understand.
@@ -191,9 +262,9 @@ class MANAGESIEVE:
         line = line[:-2]
         if __debug__:
             if self.debug >= 4:
-                _mesg('< %s' % line)
+                self._mesg('< %s' % line)
             else:
-                _log('< %s' % line)
+                self._log('< %s' % line)
         return line
 
     def _simple_command(self, *args):
@@ -223,18 +294,24 @@ class MANAGESIEVE:
         # concatinate command and arguments (if any)
         data = " ".join(filter(None, (name, arg1, arg2)))
         if __debug__:
-            if self.debug >= 4: _mesg('> %r' % data)
-            else: _log('> %s' % data)
+            if self.debug >= 4: self._mesg('> %r' % data)
+            else: self._log('> %s' % data)
         try:
-            self._send('%s%s' % (data, CRLF))
-            for o in options:
-                if __debug__:
-                    if self.debug >= 4: _mesg('> %r' % o)
-                    else: _log('> %r' % data)
-                self._send('%s%s' % (o, CRLF))
-        except (socket.error, OSError), val:
-            raise self.abort('socket error: %s' % val)
-        return self._get_response()
+            try:
+                self._send('%s%s' % (data, CRLF))
+                for o in options:
+                    if __debug__:
+                        if self.debug >= 4: self._mesg('> %r' % o)
+                        else: self._log('> %r' % data)
+                    self._send('%s%s' % (o, CRLF))
+            except (socket.error, OSError), val:
+                raise self.abort('socket error: %s' % val)
+            return self._get_response()
+        except self.abort, val:
+            if __debug__:
+                if self.debug >= 1:
+                    self.print_log()
+            raise
 
 
     def _readstring(self, data):
@@ -250,14 +327,13 @@ class MANAGESIEVE:
             size = int(self.mo.group('size'))
             if __debug__:
                 if self.debug >= 4:
-                    _mesg('read literal size %s' % size)
+                    self._mesg('read literal size %s' % size)
             return self._read(size), self._get_line()
         else:
-            for i in range(len(data)):
-                if data[i] == ' ':
-                    return data[:i], data[i+1:]
-            else:
-                return data, ''
+            data = data.split(' ', 1)
+            if len(data) == 1:
+                data.append('')
+            return data
 
     def _get_response(self):
         """
@@ -298,11 +374,16 @@ class MANAGESIEVE:
                 typ, code, dat = self.mo.group('type','code','data')
                 if __debug__:
                     if self.debug >= 1:
-                        _mesg('%s response: %s %s' % (typ, code, dat))
+                        self._mesg('%s response: %s %s' % (typ, code, dat))
                 self.response_code = code
                 self.response_text = None
                 if dat:
                     self.response_text = self._readstring(dat)[0]
+
+                # if server quits here, send code instead of empty data
+                if typ == "BYE":
+                    return typ, code
+
                 return typ, data
 ##             elif 0:
 ##                 dat2 = None
@@ -317,13 +398,15 @@ class MANAGESIEVE:
                     dat1, resp = self._readstring(resp)
                     if __debug__:
                         if self.debug >= 4:
-                            _mesg('read: %r' % (dat1,))
+                            self._mesg('read: %r' % (dat1,))
                         if self.debug >= 5:
-                            _mesg('rest: %r' % (resp,))
+                            self._mesg('rest: %r' % (resp,))
                     dat.append(dat1)
                     if not resp.startswith(' '):
                         break
                     resp = resp[1:]
+                if len(dat) == 1:
+                    dat.append(None)
                 data.append(dat)
                 resp = self._get_line()
         return self.error('Should not come here')
@@ -335,9 +418,38 @@ class MANAGESIEVE:
         self.mo = cre.match(s)
         if __debug__:
             if self.mo is not None and self.debug >= 5:
-                _mesg("\tmatched r'%s' => %s" % (cre.pattern, `self.mo.groups()`))
+                self._mesg("\tmatched r'%s' => %s" % (cre.pattern, `self.mo.groups()`))
         return self.mo is not None
 
+
+    if __debug__:
+
+        def _mesg(self, s, secs=None):
+            if secs is None:
+                secs = time.time()
+            tm = time.strftime('%M:%S', time.localtime(secs))
+            sys.stderr.write('  %s.%02d %s\n' % (tm, (secs*100)%100, s))
+            sys.stderr.flush()
+
+        def _log(self, line):
+            # Keep log of last `_cmd_log_len' interactions for debugging.
+            self._cmd_log[self._cmd_log_idx] = (line, time.time())
+            self._cmd_log_idx += 1
+            if self._cmd_log_idx >= self._cmd_log_len:
+                self._cmd_log_idx = 0
+
+        def print_log(self):
+            self.self._mesg('last %d SIEVE interactions:' % len(self._cmd_log))
+            i, n = self._cmd_log_idx, self._cmd_log_len
+            while n:
+                try:
+                    self.self._mesg(*self._cmd_log[i])
+                except:
+                    pass
+                i += 1
+                if i >= self._cmd_log_len:
+                    i = 0
+                n -= 1
 
     ### Public methods ###
     def authenticate(self, mechanism, *authobjects):
@@ -348,10 +460,21 @@ class MANAGESIEVE:
         if not mech in self.loginmechs:
             raise self.error("Server doesn't allow %s authentication." % mech)
 
-        authobjects = [ sieve_name(binascii.b2a_base64(ao)[:-1])
-                        for ao in authobjects
-                        ]
-                
+        if mech == AUTH_LOGIN:
+            authobjects = [ sieve_name(binascii.b2a_base64(ao)[:-1])
+                            for ao in authobjects
+                            ]
+        elif mech == AUTH_PLAIN:
+            if len(authobjects) < 3:
+                # assume authorization identity (authzid) is missing
+                # and these two authobjects are username and password
+                authobjects.insert(0, '')
+            ao = '\0'.join(authobjects)
+            ao = binascii.b2a_base64(ao)[:-1]
+            authobjects = [ sieve_string(ao) ]
+        else:
+            raise self.error("managesieve doesn't support %s authentication." % mech)
+
         typ, data = self._command('AUTHENTICATE',
                                   sieve_name(mech), *authobjects)
         if typ == 'OK':
@@ -360,9 +483,17 @@ class MANAGESIEVE:
 
 
     def login(self, auth, user, password):
-        """ Login to the Sieve server using mechanism LOGIN. """
-        return self.authenticate('LOGIN', user, password)
-
+        """
+        Authenticate to the Sieve server using the best mechanism available.
+        """
+        for authmech in AUTHMECHS:
+            if authmech in self.loginmechs:
+                authobjs = [auth, user, password]
+                if authmech == AUTH_LOGIN:
+                    authobjs = [user, password]
+                return self.authenticate(authmech, *authobjs)
+        else:
+            raise self.abort('No matching authentication mechanism found.')
 
     def logout(self):
         """Terminate connection to server."""
@@ -390,7 +521,7 @@ class MANAGESIEVE:
             if __debug__:
                 if not len(dat) in (1, 2):
                     self.error("Unexpected result from LISTSCRIPTS: %r" (dat,))
-            scripts.append( (dat[0], len(dat) == 2) )
+            scripts.append( (dat[0], dat[1] is not None ))
         return typ, scripts
 
 
@@ -451,7 +582,7 @@ class MANAGESIEVE:
                 self.implementation
                 self.loginmechs
                 self.capabilities
-                self.supports_tsl
+                self.supports_tls
         """
         # command-capability    = "CAPABILITY" CRLF
         # response-capability   = *(string [SP string] CRLF) response-oknobye
@@ -460,7 +591,33 @@ class MANAGESIEVE:
             self._parse_capabilities(data)
         return typ, data
 
-### not yet implemented: ###
 
-    # command-starttls      = "STARTTLS" CRLF
-    # response-starttls     = response-oknobye
+    def starttls(self, keyfile=None, certfile=None):
+        """Puts the connection to the SIEVE server into TLS mode.
+
+        If the server supports TLS, this will encrypt the rest of the SIEVE
+        session. If you provide the keyfile and certfile parameters,
+        the identity of the SIEVE server and client can be checked. This,
+        however, depends on whether the socket module really checks the
+        certificates.
+        """
+        # command-starttls      = "STARTTLS" CRLF
+        # response-starttls     = response-oknobye
+        typ, data = self._command('STARTTLS')
+        if typ == 'OK':
+            sslobj = socket.ssl(self.sock, keyfile, certfile)
+            self.sock = SSLFakeSocket(self.sock, sslobj)
+            self.file = SSLFakeFile(sslobj)
+            # MUST discard knowledge obtained from the server
+            self.__clear_knowledge()
+            # Some servers send capabilities after TLS handshake, some
+            # do not. We send a bogus command, and expect a NO. If you
+            # get something else instead, read the extra NO to clear
+            # the buffer.
+            typ, data = self._command('BOGUS')
+            if typ != 'NO': 
+                typ, data = self._get_response()
+            # server may not advertise capabilities, thus we need to ask
+            self.capability()
+            if self.debug >= 3: self._mesg('started Transport Layer Security (TLS)')
+        return typ, data

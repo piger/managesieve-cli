@@ -4,12 +4,15 @@ sieveshell - remotely manipulate sieve scripts
 
 SYNOPSIS
        sieveshell [--user=user] [--authname=authname] [--realm=realm]
-       [--exec=script] server
+       [--exec=script] [--auth-mech=mechanism] server
 
        sieveshell --help
 
 sieveshell allows users to manipulate their scripts on a remote server.
 It works via MANAGESIEVE, a work in progress protocol.
+
+Use --help to get a list of the currently supported authentication
+mechanisms.
 
 The following commands are recognized:
   list             - list scripts on server
@@ -24,7 +27,7 @@ The following commands are recognized:
   quit             - quit
 """
 
-__version__ = "0.3"
+__version__ = "0.4"
 __author__ = "Hartmut Goebel <h.goebel@crazy-compilers.com>"
 __copyright = "(c) Coypright 2003 by Hartmut Goebel <h.goebel@crazy-compilers.com>"
 __license__ = "GPL"
@@ -72,7 +75,11 @@ def cmd_put(filename, scriptname=None):
     """put <filename> [<target name>]
                  - upload script to server"""
     if not scriptname: scriptname = filename
-    scriptdata = open(filename).read()
+    try:
+        scriptdata = open(filename).read()
+    except IOError, e:
+        print "Can't read local file %s:" % filename, e.args[1]
+        return SUPPRESS
     return sieve.putscript(scriptname, scriptdata)
 
 
@@ -82,7 +89,11 @@ def cmd_get(scriptname, filename=None):
     res, scriptdata = sieve.getscript(scriptname)
     if res == 'OK':
         if filename:
-            open(filename, 'w').write(scriptdata)
+            try:
+                open(filename, 'w').write(scriptdata)
+            except IOError, e:
+                print "Can't write local file %s:" % filename, e.args[1]
+                return SUPPRESS
         else:
             print scriptdata
             res = SUPPRESS
@@ -186,8 +197,13 @@ def cmd_deactivate():
 def cmd_quit(*args):
     """quit             - quit"""
     print 'quitting.'
-    if sieve: sieve.logout()
-    sys.exit(0)
+    if sieve:
+        try:
+            # this mysteriously fails at times
+            sieve.logout()
+        except:
+            pass
+    raise SystemExit()
 
 
 # find all commands (using  introspection)
@@ -208,7 +224,8 @@ __command_map = {
     }
 
 
-def shell(auth, user=None, passwd=None, realm=None, server=''):
+def shell(auth, user=None, passwd=None, realm=None,
+          authmech='', server='', use_tls=0):
     """Main part"""
 
     def cmd_loop():
@@ -216,7 +233,12 @@ def shell(auth, user=None, passwd=None, realm=None, server=''):
         global sieve
         while 1:
             sys.stdout.write('> ')
-            line = sys.stdin.readline().strip()
+            line = sys.stdin.readline()
+            if not line:
+                # EOF/control-d
+                cmd_quit()
+                break
+            line = line.strip()
             if not line: continue
             # todo: parse command line correctly
             line = line.split()
@@ -243,18 +265,37 @@ def shell(auth, user=None, passwd=None, realm=None, server=''):
                     pass
                 else:
                     print result, sieve.response_text or sieve.response_code
+                    if result == "BYE":
+                        # quit when server send BYE
+                        cmd_quit()
 
     global sieve
     try:
         print 'connecting to', server
-        if not auth: auth = getpass.getuser()
-        if not user: user = auth
-        if not passwd: passwd = getpass.getpass()
-        sieve = managesieve.MANAGESIEVE(server)
+        try:
+            if not auth: auth = getpass.getuser()
+            if not user: user = auth
+            if not passwd: passwd = getpass.getpass()
+        except EOFError:
+            # Ctrl-D pressed
+            print # clear line
+            return
+        sieve = managesieve.MANAGESIEVE(server, use_tls=use_tls)
         print 'Server capabilities:',
         for c in sieve.capabilities: print c,
         print
-        res = sieve.login(auth, user, passwd)
+        try:
+            if not authmech:
+                # auto-select best method available
+                res = sieve.login(authmech, user, passwd)
+            elif authmech.upper() == 'LOGIN':
+                # LOGIN does not support authenticator
+                res = sieve.authenticate(authmech, user, passwd)
+            else:
+                res = sieve.authenticate(authmech, auth, user, passwd)
+        except sieve.error, e:
+            print "Authenticate error: %s" % e
+            cmd_quit()
         if res != 'OK':
             print res, sieve.response_text or sieve.response_code
             cmd_quit()
@@ -266,34 +307,43 @@ def shell(auth, user=None, passwd=None, realm=None, server=''):
 
 def main():
     """Parse options and call interactive shell."""
-    from optik import OptionParser
+    try:
+        from optparse import OptionParser
+    except ImportError:
+        from optik import OptionParser
     parser = OptionParser('Usage: %prog [options] server')
-    parser.add_option('--authname', type="string", dest='authname',
-                      help= ("The user to use for authentication "
-                             "(defaults to current user)."))
-    parser.add_option('--user', default=None,
-                      type="string", dest='username',
-                      help = ("The authorization name to request; "
-                              "by default, derived from the "
-                              "authentication credentials."))
-    parser.add_option('--passwd', default=None,
-                      type="string", dest='passwd',
-                      help = ("The the password."))
-    parser.add_option('--realm', type="string", dest='realm',
+    parser.add_option('--authname',
+                      help= "The user to use for authentication "
+                            "(defaults to current user).")
+    parser.add_option('--user', dest='username',
+                      help = "The authorization name to request; "
+                             "by default, derived from the "
+                             "authentication credentials.")
+    parser.add_option('--passwd', help = "The password to use.")
+    parser.add_option('--realm',
                       help= "The realm to attempt authentication in.")
-    parser.add_option('--script', type="string", dest='script',
-                      help= ("Instead of working interactively, run "
-                             "commands from SCRIPT, and exit when done."))
+    parser.add_option('--auth-mech', default="",
+                      help= "The SASL authentication mechanism to use "
+                            "(default: auto select; available: %s)." %  ', '.join(managesieve.AUTHMECHS))
+    parser.add_option('--script', '--script-file',
+                      help= "Instead of working interactively, run "
+                            "commands from SCRIPT, and exit when done.")
+    parser.add_option('--use-tls', '--tls', action="store_true",
+                      help="Switch to TLS if server supports it.")
     options, args = parser.parse_args()
+
+    if options.auth_mech and not options.auth_mech.upper() in managesieve.AUTHMECHS:
+        parser.error("Authentication mechanism %s is not supported. Choose one of %s" % (options.auth_mech.upper(), ', '.join(managesieve.AUTHMECHS)))
+
     if len(args) != 1:
         parser.error("Argument 'server' missing.")
     server = args[0]
 
-    shell(options.authname, options.passwd, options.username,
-          options.realm, server)
+    shell(options.authname, options.username, options.passwd,
+          options.realm, options.auth_mech, server, options.use_tls)
     return 0
 
 
 if __name__ == "__main__":
     #managesieve.Debug = 4
-    sys.exit(main())
+    raise SystemExit(main())
