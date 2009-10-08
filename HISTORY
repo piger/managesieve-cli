@@ -1,3 +1,8 @@
+Version 0.4.1 by Hartmut Goebel <h.goebel at crazy-compilers.com>
+--------------------------------------------------------------------
+:managesieve:
+  - fixed short read (thanks to paurkedal for submitting the patch)
+
 
 Version 0.4 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 --------------------------------------------------------------------

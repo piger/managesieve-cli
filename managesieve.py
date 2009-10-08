@@ -4,7 +4,7 @@ A Protocol for Remotely Managing Sieve Scripts
 Based on <draft-martin-managesieve-04.txt>
 """
 
-__version__ = "0.4"
+__version__ = "0.4.1"
 __author__ = """Hartmut Goebel <h.goebel@crazy-compilers.com>
 Ulrich Eck <ueck@net-labs.de> April 2001
 """
@@ -245,7 +245,10 @@ class MANAGESIEVE:
 
     def _read(self, size):
         """Read 'size' bytes from remote."""
-        return self.file.read(size)
+	data = ""
+	while len(data) < size:
+	    data += self.file.read(size - len(data))
+	return data
 
     def _readline(self):
         """Read line from remote."""
