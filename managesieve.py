@@ -245,7 +245,10 @@ class MANAGESIEVE:
 
     def _read(self, size):
         """Read 'size' bytes from remote."""
-        return self.file.read(size)
+	data = ""
+	while len(data) < size:
+	    data += self.file.read(size - len(data))
+	return data
 
     def _readline(self):
         """Read line from remote."""
