@@ -1,5 +1,5 @@
-managesieve 0.4
-================
+managesieve 0.4.1
+=================
 
 A ManageSieve client library for remotely managing Sieve scripts,
 including an user application (the interactive 'sieveshell').
@@ -16,6 +16,9 @@ This module allows accessing a Sieve-Server for managing Sieve scripts
 there. It is accompanied by a simple yet functional user application
 'sieveshell'.
 
+Changes since 0.4
+-----------------
+  - fixed short read (thanks to paurkedal for submitting the patch)
 
 Changes since 0.3
 -----------------

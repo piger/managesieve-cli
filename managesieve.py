@@ -4,7 +4,7 @@ A Protocol for Remotely Managing Sieve Scripts
 Based on <draft-martin-managesieve-04.txt>
 """
 
-__version__ = "0.4"
+__version__ = "0.4.1"
 __author__ = """Hartmut Goebel <h.goebel@crazy-compilers.com>
 Ulrich Eck <ueck@net-labs.de> April 2001
 """
