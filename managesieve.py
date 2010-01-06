@@ -4,12 +4,17 @@ A Protocol for Remotely Managing Sieve Scripts
 Based on <draft-martin-managesieve-04.txt>
 """
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 __author__ = """Hartmut Goebel <h.goebel@crazy-compilers.com>
 Ulrich Eck <ueck@net-labs.de> April 2001
 """
 
 import binascii, re, socket, time, random, sys
+try:
+    import ssl
+    ssl_wrap_socket = ssl.wrap_socket
+except ImportError:
+    ssl_wrap_socket = socket.ssl
 
 __all__ = [ 'MANAGESIEVE', 'SIEVE_PORT', 'OK', 'NO', 'BYE', 'Debug']
 
@@ -608,7 +613,7 @@ class MANAGESIEVE:
         # response-starttls     = response-oknobye
         typ, data = self._command('STARTTLS')
         if typ == 'OK':
-            sslobj = socket.ssl(self.sock, keyfile, certfile)
+            sslobj = ssl_wrap_socket(self.sock, keyfile, certfile)
             self.sock = SSLFakeSocket(self.sock, sslobj)
             self.file = SSLFakeFile(sslobj)
             # MUST discard knowledge obtained from the server

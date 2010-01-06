@@ -1,3 +1,9 @@
+Version 0.4.2 by Hartmut Goebel <h.goebel at crazy-compilers.com>
+--------------------------------------------------------------------
+:managesieve:
+  - Use ssl.wrap_socket() instead of deprecated socket.ssl().
+    Thanks to Guido Berhoerster for submitting the patch.
+
 Version 0.4.1 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 --------------------------------------------------------------------
 :managesieve:

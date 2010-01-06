@@ -1,4 +1,4 @@
-managesieve 0.4.1
+managesieve 0.4.2
 =================
 
 A ManageSieve client library for remotely managing Sieve scripts,
@@ -19,6 +19,8 @@ there. It is accompanied by a simple yet functional user application
 Changes since 0.4
 -----------------
   - fixed short read (thanks to paurkedal for submitting the patch)
+  - Use ssl.wrap_socket() instead of deprecated socket.ssl().
+    Thanks to Guido Berhoerster for submitting the patch.
 
 Changes since 0.3
 -----------------
