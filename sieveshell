@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 """
 sieveshell - remotely manipulate sieve scripts
 
@@ -29,7 +29,7 @@ The following commands are recognized:
 
 __version__ = "0.4"
 __author__ = "Hartmut Goebel <h.goebel@crazy-compilers.com>"
-__copyright = "(c) Coypright 2003 by Hartmut Goebel <h.goebel@crazy-compilers.com>"
+__copyright__ = "(c) Copyright 2003-2010 by Hartmut Goebel <h.goebel@crazy-compilers.com>"
 __license__ = "GPL"
 
 
@@ -225,7 +225,7 @@ __command_map = {
 
 
 def shell(auth, user=None, passwd=None, realm=None,
-          authmech='', server='', use_tls=0):
+          authmech='', server='', use_tls=0, port=managesieve.SIEVE_PORT):
     """Main part"""
 
     def cmd_loop():
@@ -280,7 +280,7 @@ def shell(auth, user=None, passwd=None, realm=None,
             # Ctrl-D pressed
             print # clear line
             return
-        sieve = managesieve.MANAGESIEVE(server, use_tls=use_tls)
+        sieve = managesieve.MANAGESIEVE(server, port=port, use_tls=use_tls)
         print 'Server capabilities:',
         for c in sieve.capabilities: print c,
         print
@@ -330,6 +330,8 @@ def main():
                             "commands from SCRIPT, and exit when done.")
     parser.add_option('--use-tls', '--tls', action="store_true",
                       help="Switch to TLS if server supports it.")
+    parser.add_option('--port', type="int", default=managesieve.SIEVE_PORT,
+                      help="port number to connect to (default: %default)")
     options, args = parser.parse_args()
 
     if options.auth_mech and not options.auth_mech.upper() in managesieve.AUTHMECHS:
@@ -340,7 +342,8 @@ def main():
     server = args[0]
 
     shell(options.authname, options.username, options.passwd,
-          options.realm, options.auth_mech, server, options.use_tls)
+          options.realm, options.auth_mech, server, options.use_tls,
+          options.port)
     return 0
 
 
