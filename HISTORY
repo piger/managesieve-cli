@@ -1,3 +1,9 @@
+Version XXX by Hartmut Goebel <h.goebel at crazy-compilers.com>
+--------------------------------------------------------------------
+:sieveshell:
+  - Added option --port, thanks to Damien Aumaitre submitting for the
+    patch.
+
 Version 0.4.2 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 --------------------------------------------------------------------
 :managesieve:
