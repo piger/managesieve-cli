@@ -18,8 +18,8 @@ The ManageSieve protocol allows managing Sieve scripts on a remote
 mail server. These servers are commonly sealed so users cannot log
 into them, yet users must be able to update their scripts on them.
 This is what for the "ManageSieve" protocol is. For more information
-about the ManageSieve protocol see `the ManageSieve Internet draft
-<http://www.ietf.org/internet-drafts/draft-martin-managesieve-07.txt>`_.
+about the ManageSieve protocol see `RFC 5804
+<http://tools.ietf.org/html/rfc5804>`_.
 
 This module allows accessing a Sieve-Server for managing Sieve scripts
 there. It is accompanied by a simple yet functional user application

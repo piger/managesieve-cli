@@ -1,7 +1,6 @@
-"""Sieve management client.
+"""Sieve management client module
 
-A Protocol for Remotely Managing Sieve Scripts
-Based on <draft-martin-managesieve-04.txt>
+A Protocol for Remotely Managing Sieve Scripts, RFC 5804
 """
 
 __version__ = "0.4.2"
