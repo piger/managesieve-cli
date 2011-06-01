@@ -53,7 +53,18 @@ http://python-managesieve.origo.ethz.ch/
 Requirements
 ------------
 
-managesieve requires Python >= 2.0
+managesieve requires
+
+* `Python 2.x`__ or higher (tested with 2.5 and 2.6, but other
+   versions should work, too, Python 3.x is *not* supported),
+* `logging`__ when using Python < 2.3 (`logging` is already
+  included in Python 2.3 and higher)
+* `setuptools`__ or `distribute`__ for installation (see below)
+
+__ http://www.python.org/download/
+__ http://pypi.python.org/pypi/logging
+__ http://pypi.python.org/pypi/setuptools
+__ http://pypi.python.org/pypi/distribute
 
 
 Not yet implemented
