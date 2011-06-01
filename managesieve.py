@@ -10,15 +10,24 @@ Ulrich Eck <ueck@net-labs.de> April 2001
 """
 
 import binascii, re, socket, time, random, sys
+import logging
+from logging import log
 try:
     import ssl
     ssl_wrap_socket = ssl.wrap_socket
 except ImportError:
     ssl_wrap_socket = socket.ssl
 
-__all__ = [ 'MANAGESIEVE', 'SIEVE_PORT', 'OK', 'NO', 'BYE', 'Debug']
+__all__ = [ 'MANAGESIEVE', 'SIEVE_PORT', 'OK', 'NO', 'BYE',
+            'INFO', 'DEBUG', 'DEBUG0', 'DEBUG1', 'DEBUG2', 'DEBUG3']
 
-Debug = 0
+# logging levels
+INFO = logging.INFO
+DEBUG0 = DEBUG = logging.DEBUG+3 # commands and responses
+DEBUG1 = logging.DEBUG+2 # send and read data (except long literals)
+DEBUG2 = logging.DEBUG+1 # more details
+DEBUG3 = logging.DEBUG   # all debug messages (pattern matching, etc.)
+
 CRLF = '\r\n'
 SIEVE_PORT = 2000
 
@@ -177,7 +186,6 @@ class MANAGESIEVE:
                  use_tls=False, keyfile=None, certfile=None):
         self.host = host
         self.port = port
-        self.debug = Debug
         self.state = 'NONAUTH'
 
         self.response_text = self.response_code = None
@@ -190,8 +198,7 @@ class MANAGESIEVE:
             self._cmd_log_len = 10
             self._cmd_log_idx = 0
             self._cmd_log = {}           # Last `_cmd_log_len' interactions
-            if self.debug >= 1:
-                self._mesg('managesieve version %s' % __version__)
+            self._log(INFO, 'managesieve version %s', __version__)
 
         # Get server welcome message,
         # request and store CAPABILITY response.
@@ -213,8 +220,7 @@ class MANAGESIEVE:
                 typ = line[0]
                 data = None
             if __debug__:
-                if self.debug >= 3:
-                    self._mesg('%s: %r' % (typ, data))
+                self._log(DEBUG0, '%s: %r', typ, data)
             if typ == "IMPLEMENTATION":
                 self.implementation = data
             elif typ == "SASL":
@@ -269,10 +275,7 @@ class MANAGESIEVE:
         # Protocol mandates all lines terminated by CRLF
         line = line[:-2]
         if __debug__:
-            if self.debug >= 4:
-                self._mesg('< %s' % line)
-            else:
-                self._log('< %s' % line)
+            self._log(DEBUG1, '< %s', line)
         return line
 
     def _simple_command(self, *args):
@@ -302,23 +305,20 @@ class MANAGESIEVE:
         # concatinate command and arguments (if any)
         data = " ".join(filter(None, (name, arg1, arg2)))
         if __debug__:
-            if self.debug >= 4: self._mesg('> %r' % data)
-            else: self._log('> %s' % data)
+            self._log(DEBUG1, '> %s', data)
         try:
             try:
                 self._send('%s%s' % (data, CRLF))
                 for o in options:
                     if __debug__:
-                        if self.debug >= 4: self._mesg('> %r' % o)
-                        else: self._log('> %r' % data)
+                        self._log(DEBUG1, '> %r', o)
                     self._send('%s%s' % (o, CRLF))
             except (socket.error, OSError), val:
                 raise self.abort('socket error: %s' % val)
             return self._get_response()
         except self.abort, val:
             if __debug__:
-                if self.debug >= 1:
-                    self.print_log()
+                self.print_log()
             raise
 
 
@@ -334,8 +334,7 @@ class MANAGESIEVE:
             # read a 'literal' string
             size = int(self.mo.group('size'))
             if __debug__:
-                if self.debug >= 4:
-                    self._mesg('read literal size %s' % size)
+                self._log(DEBUG2, 'read literal size %s', size)
             return self._read(size), self._get_line()
         else:
             data = data.split(' ', 1)
@@ -381,8 +380,7 @@ class MANAGESIEVE:
             if self._match(Oknobye, resp):
                 typ, code, dat = self.mo.group('type','code','data')
                 if __debug__:
-                    if self.debug >= 1:
-                        self._mesg('%s response: %s %s' % (typ, code, dat))
+                    self._log(DEBUG0, '%s response: %s %s', typ, code, dat)
                 self.response_code = code
                 self.response_text = None
                 if dat:
@@ -405,10 +403,8 @@ class MANAGESIEVE:
                 while 1:
                     dat1, resp = self._readstring(resp)
                     if __debug__:
-                        if self.debug >= 4:
-                            self._mesg('read: %r' % (dat1,))
-                        if self.debug >= 5:
-                            self._mesg('rest: %r' % (resp,))
+                        self._log(DEBUG2, 'read: %r', dat1)
+                        self._log(DEBUG3, 'rest: %r', resp)
                     dat.append(dat1)
                     if not resp.startswith(' '):
                         break
@@ -424,40 +420,32 @@ class MANAGESIEVE:
         # Run compiled regular expression match method on 's'.
         # Save result, return success.
         self.mo = cre.match(s)
-        if __debug__:
-            if self.mo is not None and self.debug >= 5:
-                self._mesg("\tmatched r'%s' => %s" % (cre.pattern, `self.mo.groups()`))
+        if __debug__ and self.mo is not None:
+            self._log(DEBUG3, "\tmatched '%r' => %r", cre.pattern, self.mo.groups())
         return self.mo is not None
 
 
     if __debug__:
 
-        def _mesg(self, s, secs=None):
-            if secs is None:
-                secs = time.time()
-            tm = time.strftime('%M:%S', time.localtime(secs))
-            sys.stderr.write('  %s.%02d %s\n' % (tm, (secs*100)%100, s))
-            sys.stderr.flush()
-
-        def _log(self, line):
-            # Keep log of last `_cmd_log_len' interactions for debugging.
-            self._cmd_log[self._cmd_log_idx] = (line, time.time())
-            self._cmd_log_idx += 1
-            if self._cmd_log_idx >= self._cmd_log_len:
-                self._cmd_log_idx = 0
-
+        def _log(self, level, msg, *args):
+            if level == DEBUG1:
+                # Keep log of last `_cmd_log_len' interactions for debugging.
+                self._cmd_log[self._cmd_log_idx] = (msg, args)
+                self._cmd_log_idx = (self._cmd_log_idx+1) % self._cmd_log_len
+            log(level, msg, *args)
+            
         def print_log(self):
-            self.self._mesg('last %d SIEVE interactions:' % len(self._cmd_log))
-            i, n = self._cmd_log_idx, self._cmd_log_len
-            while n:
+            idx, cnt = self._cmd_log_idx, len(self._cmd_log)
+            log(logging.ERROR, 'last %d SIEVE interactions:', cnt)
+            idx = idx % cnt
+            while cnt:
+                msg, args = self._cmd_log[idx]
                 try:
-                    self.self._mesg(*self._cmd_log[i])
+                    log(logging.ERROR, msg, *args)
                 except:
                     pass
-                i += 1
-                if i >= self._cmd_log_len:
-                    i = 0
-                n -= 1
+                idx = (idx+1) % self._cmd_log_len
+                cnt -= 1
 
     ### Public methods ###
     def authenticate(self, mechanism, *authobjects):
@@ -627,5 +615,6 @@ class MANAGESIEVE:
                 typ, data = self._get_response()
             # server may not advertise capabilities, thus we need to ask
             self.capability()
-            if self.debug >= 3: self._mesg('started Transport Layer Security (TLS)')
+            if __debug__:
+                self._log(INFO, 'started Transport Layer Security (TLS)')
         return typ, data

@@ -4,6 +4,13 @@ Version XXX by Hartmut Goebel <h.goebel at crazy-compilers.com>
   - Added option --port, thanks to Damien Aumaitre submitting for the
     patch.
 
+:managesieve:
+  - Switched to Python standard logging system.
+    This introduces a minor interface change: MANAGESIEVE.debug and
+    global Debug are gone. See source for information about debuging
+    log levels.
+
+
 Version 0.4.2 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 --------------------------------------------------------------------
 :managesieve:
