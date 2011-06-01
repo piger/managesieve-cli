@@ -358,4 +358,6 @@ def main():
 
 
 if __name__ == "__main__":
+    if __doc__ is None:
+        raise SystemExit('Must not be run with Python option -OO (removed doc-strings)')
     raise SystemExit(main())
