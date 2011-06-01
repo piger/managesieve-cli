@@ -13,7 +13,7 @@ from distutils.command.bdist_rpm import bdist_rpm
 # patch distutils if it can't cope with the "classifiers" or
 # "download_url" keywords
 import sys
-if sys.version < '2.2.3':
+if sys.version_info < (2,2,3):
     from distutils.dist import DistributionMetadata
     DistributionMetadata.classifiers = None
     DistributionMetadata.download_url = None
