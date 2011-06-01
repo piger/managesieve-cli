@@ -3,6 +3,8 @@ Version XXX by Hartmut Goebel <h.goebel at crazy-compilers.com>
 :sieveshell:
   - Added option --port, thanks to Damien Aumaitre submitting for the
     patch.
+  - Added option --verbose for controling debug output in managesieve.
+    May be given several times to increase verbosity.
 
 :managesieve:
   - Switched to Python standard logging system.

@@ -332,6 +332,9 @@ def main():
                       help="Switch to TLS if server supports it.")
     parser.add_option('--port', type="int", default=managesieve.SIEVE_PORT,
                       help="port number to connect to (default: %default)")
+    parser.add_option('-v', '--verbose', action='count', default=0,
+                      help='Be verbose. May be given several times to increase verbosity')
+
     options, args = parser.parse_args()
 
     if options.auth_mech and not options.auth_mech.upper() in managesieve.AUTHMECHS:
@@ -341,6 +344,13 @@ def main():
         parser.error("Argument 'server' missing.")
     server = args[0]
 
+    if options.verbose:
+        level = managesieve.INFO
+        if options.verbose > 1:
+            level = managesieve.DEBUG0 - (options.verbose-2)
+        import logging
+        logging.basicConfig(level=level, format="%(message)s")
+
     shell(options.authname, options.username, options.passwd,
           options.realm, options.auth_mech, server, options.use_tls,
           options.port)
@@ -348,5 +358,4 @@ def main():
 
 
 if __name__ == "__main__":
-    #managesieve.Debug = 4
     raise SystemExit(main())
