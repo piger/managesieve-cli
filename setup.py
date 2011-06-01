@@ -18,6 +18,10 @@ if sys.version_info < (2,2,3):
     DistributionMetadata.classifiers = None
     DistributionMetadata.download_url = None
 
+install_requires = []
+if sys.version_info < (2,3):
+    install_requires.append('logging')
+
 
 class MyBDist_RPM(bdist_rpm):
     """Wrapper for 'bdist_rpm' handling 'python2'"""
@@ -49,6 +53,7 @@ setup (name = "managesieve",
        keywords = ['sieve', 'managesieve', 'sieveshell'],
        py_modules = ['managesieve'],
        scripts = ['sieveshell'],
+       install_requires = install_requires,
        cmdclass = {'bdist_rpm': MyBDist_RPM},
        classifiers = [
           'Development Status :: 5 - Production/Stable',
