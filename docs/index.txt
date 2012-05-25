@@ -1,3 +1,4 @@
+.. -*- mode: rst ; ispell-local-dictionary: "american" -*-
 
 ===============
 `managesieve`
