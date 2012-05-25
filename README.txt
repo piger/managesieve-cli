@@ -11,7 +11,7 @@ A ManageSieve client library for remotely managing Sieve scripts, including an u
 :Author:  Hartmut Goebel <h.goebel@crazy-compiler.com>
 :Version: 0.4.2
 :Copyright: GNU Public License v3 (GPLv3)
-:Homepage: http://python-managesieve.origo.ethz.ch/
+:Homepage: http://packages.python.org/managesieve
 
 Sieve scripts allow users to filter incoming email on the mail server.
 The ManageSieve protocol allows managing Sieve scripts on a remote
@@ -106,7 +106,7 @@ breeze::
      easy_install managesieve
 
 Without network access download `managesieve` from
-http://python-managesieve.origo.ethz.ch/download and run::
+http://pypi.python.org/pypi/managesieve and run::
 
      easy_install managesieve-*.tar.gz
 
