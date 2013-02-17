@@ -33,7 +33,14 @@ __copyright__ = "Copyright (C) 2003-2011 by Hartmut Goebel <h.goebel@crazy-compi
 __license__ = "GPL"
 
 
-import sys, getpass, inspect, managesieve, os
+import sys
+import getpass
+import inspect
+import managesieve
+import os
+from utils import read_config_defaults
+
+
 sieve = None
 
 SUPPRESS = '--suppress--' # token for suppressing 'OK' after cmd execution
@@ -334,6 +341,10 @@ def main():
                       help="port number to connect to (default: %default)")
     parser.add_option('-v', '--verbose', action='count', default=0,
                       help='Be verbose. May be given several times to increase verbosity')
+
+    config_file = os.environ.get("MANAGESIEVE_CONFIG")
+    if config_file:
+        read_config_defaults(config_file, parser)
 
     options, args = parser.parse_args()
 
