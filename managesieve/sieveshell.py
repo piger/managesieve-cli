@@ -38,7 +38,7 @@ import getpass
 import inspect
 import managesieve
 import os
-from managesieve.utils import read_config_defaults, exec_command
+from .utils import read_config_defaults, exec_command
 
 
 sieve = None
