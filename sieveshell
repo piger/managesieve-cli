@@ -38,7 +38,7 @@ import getpass
 import inspect
 import managesieve
 import os
-from utils import read_config_defaults
+from managesieve.utils import read_config_defaults, exec_command
 
 
 sieve = None
@@ -341,12 +341,18 @@ def main():
                       help="port number to connect to (default: %default)")
     parser.add_option('-v', '--verbose', action='count', default=0,
                       help='Be verbose. May be given several times to increase verbosity')
+    parser.add_option('-x', '--password-command', dest='password_command',
+                      help="Shell command to execute to get the password")
 
     config_file = os.environ.get("MANAGESIEVE_CONFIG")
     if config_file:
         read_config_defaults(config_file, parser)
 
     options, args = parser.parse_args()
+
+    # handle password-command
+    if options.password_command:
+        options.passwd = exec_command(options.password_command)
 
     if options.auth_mech and not options.auth_mech.upper() in managesieve.AUTHMECHS:
         parser.error("Authentication mechanism %s is not supported. Choose one of %s" % (options.auth_mech.upper(), ', '.join(managesieve.AUTHMECHS)))
