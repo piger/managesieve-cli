@@ -1,13 +1,47 @@
 # -*- coding: utf-8 -*-
+import sys
 import argparse
 import logging
 from pprint import pprint
 from config import parse_config_file
 from utils import exec_command
-from .mio import ManageSieveClient
+from .mio import ManageSieveClient, CommandFailed
 
 
 log = logging.getLogger(__name__)
+
+
+class Client(object):
+    def __init__(self, args, sieve):
+        self.args = args
+        self.sieve = sieve
+
+    def run(self):
+        fname = "cmd_%s" % self.args.cmd
+        if hasattr(self, fname):
+            fn = getattr(self, fname)
+            try:
+                fn()
+            except CommandFailed, e:
+                self.show_error("ERROR: %s" % e)
+                sys.exit(1)
+        else:
+            self.show_error("Invalid command: %s" % self.args.cmd)
+            sys.exit(1)
+        sys.exit(0)
+
+    def cmd_list(self):
+        scripts = self.sieve.list_scripts()
+
+        for script, active in scripts:
+            print "%s%s" % ('* ' if active else '', script)
+
+    def cmd_get(self):
+        data = self.sieve.get_script(self.args.name)
+        print data
+
+    def show_error(self, message):
+        sys.stderr.write("%s\n" % message)
 
 
 def parse_cmdline():
@@ -18,12 +52,16 @@ def parse_cmdline():
     parser.add_argument('-a', '--account', required=True)
     parser.add_argument('--debug', action="store_true",
                         help="Print debugging informations")
+    parser.add_argument('-v', '--verbose', action="store_true",
+                        help="Show more output")
 
     subparsers = parser.add_subparsers(help="sub-command help")
     cmd_list = subparsers.add_parser("list", help="list command")
     cmd_list.set_defaults(cmd="list")
 
     cmd_put = subparsers.add_parser("put", help="put command")
+    cmd_put.add_argument('name', metavar='SCRIPT-NAME',
+                         help="Absolute path to the file to be uploaded")
     cmd_put.add_argument('-d', '--destfile', help="dest file")
     cmd_put.set_defaults(cmd="put")
 
@@ -34,32 +72,28 @@ def parse_cmdline():
     cmd_get.set_defaults(cmd="get")
 
     cmd_edit = subparsers.add_parser("edit", help="edit command")
+    cmd_edit.add_argument('name', metavar='SCRIPT-NAME',
+                          help="Name of the remote script")
     cmd_edit.set_defaults(cmd="edit")
 
     cmd_activate = subparsers.add_parser("activate", help="activate command")
+    cmd_activate.add_argument('name', metavar='SCRIPT-NAME',
+                              help="Name of the remote script")
     cmd_activate.set_defaults(cmd="activate")
 
     cmd_deactivate = subparsers.add_parser("deactivate", help="deactivate command")
+    cmd_deactivate.add_argument('name', metavar='SCRIPT-NAME',
+                                help="Name of the remote script")
     cmd_deactivate.set_defaults(cmd="deactivate")
 
     cmd_delete = subparsers.add_parser("delete", help="delete command")
+    cmd_delete.add_argument('name', metavar='SCRIPT-NAME',
+                            help="Name of the remote script")
     cmd_delete.set_defaults(cmd="delete")
 
     args = parser.parse_args()
 
     return args
-
-
-def cmd_list(args, sieve):
-    scripts = sieve.list_scripts()
-
-    for script, active in scripts:
-        print "%s%s" % ('* ' if active else '', script)
-
-
-def cmd_get(args, sieve):
-    data = sieve.get_script(args.name)
-    print data
 
 
 def run_command(args, config, account_config):
@@ -90,12 +124,8 @@ def run_command(args, config, account_config):
     except Exception, e:
         raise
 
-    if args.cmd == "list":
-        cmd_list(args, sieve)
-    elif args.cmd == "get":
-        cmd_get(args, sieve)
-    else:
-        raise RuntimeError("You must write the code for that command :-P")
+    client = Client(args, sieve)
+    client.run()
 
 
 def main():

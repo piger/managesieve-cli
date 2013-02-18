@@ -73,7 +73,13 @@ class EOFFromServer(ManageSieveClientError): pass
 class InvalidResponse(ManageSieveClientError): pass
 class InvalidState(ManageSieveClientError): pass
 class ConnectionError(ManageSieveClientError): pass
-class CommandFailed(ManageSieveClientError): pass
+
+
+class CommandFailed(ManageSieveClientError):
+    def __init__(self, command, response, message):
+        self.command = command
+        self.response = response
+        super(CommandFailed, self).__init__(message)
 
 
 class Response(object):
@@ -238,13 +244,12 @@ class ManageSieveClient(object):
                 scripts.append((script_name, script_active))
             return scripts
         else:
-            raise CommandFailed("LISTSCRIPTS failed: %r" % response)
+            raise CommandFailed("LISTSCRIPTS", response, response.text)
 
     def get_script(self, name):
         response = self._send_command("GETSCRIPT", self._sieve_name(name))
         if response.status != Response.OK:
-            log.debug("GETSCRIPT for %s failed: %r" % (name, response))
-            return response
+            raise CommandFailed("GETSCRIPT", response, response.text)
         return response.data[0]
 
     def _parse_capabilities(self, capabilities):
@@ -315,30 +320,58 @@ class ManageSieveClient(object):
             # dimensione specificata in `bytes`...
 
             stat_match = _response.match(line)
-            lit_match = _literal.match(line)
             if stat_match:
                 resp = stat_match.groupdict()
-                response = Response(resp.get('status'), resp.get('code'),
-                                             resp.get('text'), lines)
+                # Read the response data: can be one of the multiple literal
+                # formats.
+                data = resp.get('data')
+                if data:
+                    data = self._read_text(data)[0]
+                response = Response(resp.get('status'), resp.get('code'), data,
+                                             lines)
                 log.debug("Returning response %r" % response)
                 return response
-
-            elif lit_match:
-                resp = lit_match.groupdict()
-                size = resp.get('size')
-                buf = self.fd.read(int(size))
-                log.debug("Appending buffer %r" % (buf,))
-                lines.append(buf)
-
-            elif line.startswith('"'):
-                tokens = shlex.split(line)
-                log.debug("Appending tokens %r" % (tokens,))
-                lines.append(tuple(tokens))
-
             else:
-                tokens = line.split(' ', 1)
-                log.debug("Appending tokens %r" % (tokens,))
-                lines.append(tuple(tokens))
+                data = self._read_text(line)
+                lines.append(data)
+
+            # elif lit_match:
+            #     resp = lit_match.groupdict()
+            #     size = resp.get('size')
+            #     buf = self.fd.read(int(size))
+            #     log.debug("Appending buffer %r" % (buf,))
+            #     lines.append(buf)
+
+            # elif line.startswith('"'):
+            #     tokens = shlex.split(line)
+            #     log.debug("Appending tokens %r" % (tokens,))
+            #     lines.append(tuple(tokens))
+
+            # else:
+            #     tokens = line.split(' ', 1)
+            #     log.debug("Appending tokens %r" % (tokens,))
+            #     lines.append(tuple(tokens))
+
+    def _read_text(self, data):
+        result = None
+
+        lit_match = _literal.match(data)
+        if data.startswith(' '):
+            raise InvalidResponse("Invalid data: unexpected white space")
+        elif data.startswith('"'):
+            result = shlex.split(data)
+        elif lit_match:
+            resp = lit_match.groupdict()
+            size = resp.get('size')
+            buf = self.fd.read(int(size))
+            log.debug("Appending buffer %r" % (buf,))
+            result = buf
+        else:
+            result = data.split(' ', 1)
+            if len(result) == 1:
+                result.append('')
+
+        return result
 
     def _send_command(self, name, arg1=None, arg2=None, *options):
         if self.state not in self.COMMAND_STATES[name]:
