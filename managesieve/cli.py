@@ -11,6 +11,10 @@ from .mio import ManageSieveClient, CommandFailed
 log = logging.getLogger(__name__)
 
 
+def show_error(message):
+    sys.stderr.write("%s\n" % message)
+
+
 class Client(object):
     def __init__(self, args, sieve):
         self.args = args
@@ -23,10 +27,10 @@ class Client(object):
             try:
                 fn()
             except CommandFailed, e:
-                self.show_error("ERROR: %s" % e)
+                show_error("ERROR: %s" % e)
                 sys.exit(1)
         else:
-            self.show_error("Invalid command: %s" % self.args.cmd)
+            show_error("Invalid command: %s" % self.args.cmd)
             sys.exit(1)
         sys.exit(0)
 
@@ -39,9 +43,6 @@ class Client(object):
     def cmd_get(self):
         data = self.sieve.get_script(self.args.name)
         print data
-
-    def show_error(self, message):
-        sys.stderr.write("%s\n" % message)
 
 
 def parse_cmdline():
@@ -96,7 +97,12 @@ def parse_cmdline():
     return args
 
 
-def run_command(args, config, account_config):
+def run_command(args, config):
+    account_config = config.get(args.account)
+    if account_config is None:
+        show_error("Account configuration '%s' not found" % args.account)
+        sys.exit(1)
+
     use_tls = True if account_config.get('remote.use_tls') else False
     address = account_config.get('remote.host')
     port = int(account_config.get('remote.port'))
@@ -137,8 +143,4 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     config = parse_config_file(args.config)
-    account_config = config.get(args.account)
-    if account_config is None:
-        print "Account configuration '%s' not found" % args.account
-
-    run_command(args, config, account_config)
+    run_command(args, config)
