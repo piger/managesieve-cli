@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+    managesieve.config
+    ~~~~~~~~~~~~~~~~~~
+
+    Configuration file handling.
+
+    :copyright: (c) 2013 by Daniel Kertesz <daniel@spatof.org>
+    :license: GNU Public License v3 (GPLv3)
+"""
 import ConfigParser
 
 

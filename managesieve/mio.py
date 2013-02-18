@@ -1,24 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-http://tools.ietf.org/html/rfc5804
+    Managesieve client module
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-% nc spatof.org 4190
-"IMPLEMENTATION" "dovecot"
-"SIEVE" "fileinto reject envelope encoded-character vacation subaddress comparator-i;ascii-numeric relational regex imap4flags copy include variables body enotify environment mailbox date"
-"SASL" " DIGEST-MD5 CRAM-MD5"
-"STARTTLS"
-"NOTIFY" "mailto"
-"VERSION" "1.0"
-OK "Hay!"
-ciao
-NO "Error in MANAGESIEVE command received by server."
-QUIT
-NO "Error in MANAGESIEVE command received by server."
-^]
-NO "Error in MANAGESIEVE command received by server."
-^C
-[2]    50709 interrupt  nc spatof.org 4190
+    A rewrite of `managesieve` package with some modern python.
 
+    RFC: http://tools.ietf.org/html/rfc5804
+
+    :copyright: (c) April 2001 by Hartmut Goebel <h.goebel@crazy-compilers.com>
+    :copyright: (c) April 2001 Ulrich Eck <ueck@net-labs.de>
+    :copyright: (c) 2003-2011 by Hartmut Goebel <h.goebel@crazy-compilers.com> and others"
+    :copyright: (c) 2013 by Daniel Kertesz <daniel@spatof.org>
+    :license: GNU Public License v3 (GPLv3)
 """
 import re
 import shlex

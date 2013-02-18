@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+    managesieve.cli
+    ~~~~~~~~~~~~~~~
+
+    Command line interface to ManageSieveClient instances.
+
+    :copyright: (c) 2013 by Daniel Kertesz <daniel@spatof.org>
+    :license: GNU Public License v3 (GPLv3)
+"""
 from __future__ import with_statement
 import os
 import sys
