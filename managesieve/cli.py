@@ -183,6 +183,7 @@ def parse_cmdline():
 
 
 def run_command(args, config):
+    general_config = config.get('general')
     account_config = config.get(args.account)
     if account_config is None:
         show_error("Account configuration '%s' not found" % args.account)
@@ -198,9 +199,19 @@ def run_command(args, config):
     username = account_config.get('remote.user')
     auth_mech = account_config.get('remote.auth', '')
     auth_name = account_config.get('remote.auth_name', None)
+
+    general_password = general_config.get('password')
     password_command = account_config.get('remote.password_command')
-    if password_command:
+
+    # Use the password submitted via stdin if present
+    if general_password:
+        password = general_password
+
+    # Try to execute the password command
+    elif password_command:
         password = exec_command(password_command)
+
+    # Get the password from the config file
     else:
         password = account_config.get('remote.password')
 
@@ -219,6 +230,14 @@ def run_command(args, config):
     client.run()
 
 
+def handle_stdin():
+    if not sys.stdin.isatty():
+        line = sys.stdin.readline()
+        return line.rstrip("\n")
+    else:
+        return None
+
+
 def main():
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s: %(message)s [in "
@@ -228,4 +247,8 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     config = parse_config_file(args.config)
+    stdin_pw = handle_stdin()
+    if stdin_pw:
+        config['general']['password'] = stdin_pw
+
     run_command(args, config)

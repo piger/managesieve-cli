@@ -11,6 +11,9 @@
 import ConfigParser
 
 
+class ConfigError(Exception): pass
+
+
 def parse_config_file(filename):
     config = {}
     cp = ConfigParser.SafeConfigParser()
@@ -19,8 +22,15 @@ def parse_config_file(filename):
     for section in cp.sections():
         if section.startswith('account'):
             name = section.split(' ', 1)[1]
+            if name == "general":
+                raise ConfigError("Name 'general' is reserved")
         else:
             name = section
         section_config = dict(cp.items(section))
         config[name] = section_config
+
+    # Add a general section if missing
+    if not 'general' in config:
+        config['general'] = {}
+
     return config
