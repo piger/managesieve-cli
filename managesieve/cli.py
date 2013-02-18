@@ -81,50 +81,65 @@ class Client(object):
         print response.text
 
 def parse_cmdline():
-    description = ("managesieve-cli is a command-line utility for "
-                   "interacting with remote managesieve servers")
+    description = ("A command-line utility for interacting with remote "
+                   "managesieve servers")
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('-c', '--config', required=True)
-    parser.add_argument('-a', '--account', required=True)
+    parser.add_argument('-c', '--config', required=True, metavar='FILENAME',
+                        help="Specify a configuration file")
+    parser.add_argument('-a', '--account', required=True, metavar='NAME',
+                        help="Specify an account name from the " \
+                        "configuration file")
     parser.add_argument('--debug', action="store_true",
-                        help="Print debugging informations")
+                        help="Print debug output (verbose)")
     parser.add_argument('-v', '--verbose', action="store_true",
                         help="Show more output")
 
-    subparsers = parser.add_subparsers(help="sub-command help")
-    cmd_list = subparsers.add_parser("list", help="list command")
+    subparsers = parser.add_subparsers(help="The sub-command to execute")
+    cmd_list = subparsers.add_parser(
+        "list",
+        description="List the remote Sieve scripts",
+        help="Return a list of remote Sieve scripts")
     cmd_list.set_defaults(cmd="list")
 
-    cmd_put = subparsers.add_parser("put", help="put command")
+    cmd_put = subparsers.add_parser(
+        "put",
+        description="Upload a Sieve script to the remote server",
+        help="Upload a Sieve script to the remote server")
     cmd_put.add_argument('name', metavar='SCRIPT-NAME',
                          help="Absolute path to the file to be uploaded")
     cmd_put.add_argument('-d', '--destfile', help="dest file")
     cmd_put.set_defaults(cmd="put")
 
-    cmd_get = subparsers.add_parser("get", help="get command")
+    cmd_get = subparsers.add_parser(
+        "get",
+        description="Retrieve a Sieve script from the remote server",
+        help="Retrieve a Sieve script from the remote server")
     cmd_get.add_argument('name', metavar='SCRIPT-NAME',
                          help="Name of the remote script")
-    cmd_get.add_argument('-d', '--destfile', help="dest file")
     cmd_get.set_defaults(cmd="get")
 
-    cmd_edit = subparsers.add_parser("edit", help="edit command")
-    cmd_edit.add_argument('name', metavar='SCRIPT-NAME',
-                          help="Name of the remote script")
-    cmd_edit.set_defaults(cmd="edit")
+    # cmd_edit = subparsers.add_parser("edit", help="edit command")
+    # cmd_edit.add_argument('name', metavar='SCRIPT-NAME',
+    #                       help="Name of the remote script")
+    # cmd_edit.set_defaults(cmd="edit")
 
-    cmd_activate = subparsers.add_parser("activate", help="activate command")
-    cmd_activate.add_argument('name', metavar='SCRIPT-NAME', nargs='?',
-                              help="Name of the remote script")
+    cmd_activate = subparsers.add_parser(
+        "activate",
+        description="Activate a remote Sieve script or deactivate " \
+        "the current active script",
+        help="Activate a remote Sieve script")
+    cmd_activate.add_argument(
+        'name', metavar='SCRIPT-NAME', nargs='?',
+        help="Name of the remote script; can be omitted to deactivate " \
+        "the current active script")
     cmd_activate.set_defaults(cmd="activate")
 
-    cmd_deactivate = subparsers.add_parser("deactivate", help="deactivate command")
-    cmd_deactivate.add_argument('name', metavar='SCRIPT-NAME',
-                                help="Name of the remote script")
-    cmd_deactivate.set_defaults(cmd="deactivate")
-
-    cmd_delete = subparsers.add_parser("delete", help="delete command")
+    cmd_delete = subparsers.add_parser(
+        "delete",
+        description="Delete a remote Sieve script",
+        help="Delete a remote Sieve script")
     cmd_delete.add_argument('name', metavar='SCRIPT-NAME',
-                            help="Name of the remote script")
+                            help="Name of the remote script to delete")
     cmd_delete.set_defaults(cmd="delete")
 
     args = parser.parse_args()
