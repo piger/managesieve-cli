@@ -59,7 +59,7 @@ def cmd_list(args, sieve):
 
 def cmd_get(args, sieve):
     data = sieve.get_script(args.name)
-    pprint(data)
+    print data
 
 
 def run_command(args, config, account_config):

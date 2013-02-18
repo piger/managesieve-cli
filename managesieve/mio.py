@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+http://tools.ietf.org/html/rfc5804
+
 % nc spatof.org 4190
 "IMPLEMENTATION" "dovecot"
 "SIEVE" "fileinto reject envelope encoded-character vacation subaddress comparator-i;ascii-numeric relational regex imap4flags copy include variables body enotify environment mailbox date"
@@ -36,7 +38,34 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 
-_literal = re.compile(r'{(?P<size>\d+)\+?}$')
+# All client queries are replied to with either an OK, NO, or BYE response.
+# Each response may be followed by a response code (see Section 1.3) and by a
+# string consisting of human-readable text in the local language (as returned
+# by the LANGUAGE capability; see Section 1.7), encoded in UTF-8.
+#
+# An OK, NO, or BYE response from the server MAY contain a response code to
+# describe the event in a more detailed machine-parsable fashion.  A response
+# code consists of data inside parentheses in the form of an atom, possibly
+# followed by a space and arguments.
+_response = re.compile(r'''
+                       (?P<status>
+                       OK | NO | BYE
+                       )
+
+                       (?: \s \(
+                           (?P<code>.*)
+                           \)
+                       )?
+
+                       (?: \s
+                       (?P<data>.*)
+                       )?
+                       ''', re.VERBOSE)
+
+# draft-martin-managesieve-04.txt defines the size tag of literals to
+# contain a '+' (plus sign) behind the digits, but timsieved does not
+# send one. Thus we are less strikt here:
+_literal = re.compile(r'\{(?P<size>\d+)\+?\}$')
 
 
 class ManageSieveClientError(Exception): pass
@@ -216,7 +245,7 @@ class ManageSieveClient(object):
         if response.status != Response.OK:
             log.debug("GETSCRIPT for %s failed: %r" % (name, response))
             return response
-        return response.data
+        return response.data[0]
 
     def _parse_capabilities(self, capabilities):
         if not capabilities:
@@ -255,6 +284,13 @@ class ManageSieveClient(object):
         self.capabilities = []
         self.tls_support = False
     
+    def _read_exactly(self, size):
+        """
+        Note that this method may call the underlying C function fread() more
+        than once in an effort to acquire as close to size bytes as possible.
+         """
+        return self.fd.read(size)
+
     def _read_response(self):
         """
         read: "IMPLEMENTATION" "dovecot"\r\n
@@ -278,28 +314,29 @@ class ManageSieveClient(object):
             # per cui sarebbe necessario (forse?) usare socket.read() con la
             # dimensione specificata in `bytes`...
 
-
-            tokens = shlex.split(line)
-            if not tokens:
-                #raise InvalidResponse("Empty tokens from split: %r" % line)
-                log.debug("Empty tokens")
-                continue
-
-            if tokens[0] in ('OK', 'NO', 'BYE'):
-                status = tokens.pop(0)
-                code = None
-                text = None
-                if len(tokens):
-                    tok = tokens.pop(0)
-                    if tok.startswith('('):
-                        code = tok
-                        text = tokens
-                    else:
-                        text = tok
-                response = Response(status, code, text, lines)
+            stat_match = _response.match(line)
+            lit_match = _literal.match(line)
+            if stat_match:
+                resp = stat_match.groupdict()
+                response = Response(resp.get('status'), resp.get('code'),
+                                             resp.get('text'), lines)
                 log.debug("Returning response %r" % response)
                 return response
+
+            elif lit_match:
+                resp = lit_match.groupdict()
+                size = resp.get('size')
+                buf = self.fd.read(int(size))
+                log.debug("Appending buffer %r" % (buf,))
+                lines.append(buf)
+
+            elif line.startswith('"'):
+                tokens = shlex.split(line)
+                log.debug("Appending tokens %r" % (tokens,))
+                lines.append(tuple(tokens))
+
             else:
+                tokens = line.split(' ', 1)
                 log.debug("Appending tokens %r" % (tokens,))
                 lines.append(tuple(tokens))
 
