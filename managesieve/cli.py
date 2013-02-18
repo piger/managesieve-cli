@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+from __future__ import with_statement
+import os
 import sys
 import argparse
 import logging
+import codecs
 from pprint import pprint
 from config import parse_config_file
 from utils import exec_command
@@ -45,6 +48,18 @@ class Client(object):
         data = self.sieve.get_script(self.args.name)
         print data.encode('utf-8', 'replace')
 
+    def cmd_put(self):
+        data = None
+        if self.args.destfile:
+            name = self.args.destfile
+        else:
+            name = os.path.basename(self.args.name)
+
+        with codecs.open(self.args.name, 'r', 'utf-8') as fd:
+            data = fd.read()
+
+        response = self.sieve.put_script(name, data)
+        print response
 
 def parse_cmdline():
     description = ("managesieve-cli is a command-line utility for "
