@@ -92,7 +92,10 @@ class Response(object):
     def __init__(self, status, code, text, data):
         self.status = status
         self.code = code
-        self.text = text
+        if text is not None:
+            self.text = unicode(text, 'utf-8', 'replace')
+        else:
+            self.text = text
         self.data = data[:]
 
     def __repr__(self):
@@ -239,7 +242,7 @@ class ManageSieveClient(object):
             for token in response.data:
                 if not len(token):
                     continue
-                script_name = token[0]
+                script_name = unicode(token[0], 'utf-8', 'replace')
                 script_active = True if len(token) > 1 else False
                 scripts.append((script_name, script_active))
             return scripts
@@ -250,7 +253,8 @@ class ManageSieveClient(object):
         response = self._send_command("GETSCRIPT", self._sieve_name(name))
         if response.status != Response.OK:
             raise CommandFailed("GETSCRIPT", response, response.text)
-        return response.data[0]
+        script_data = unicode(response.data[0], 'utf-8', 'replace')
+        return script_data
 
     def _parse_capabilities(self, capabilities):
         if not capabilities:

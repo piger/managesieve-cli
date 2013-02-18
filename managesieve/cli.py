@@ -38,11 +38,12 @@ class Client(object):
         scripts = self.sieve.list_scripts()
 
         for script, active in scripts:
-            print "%s%s" % ('* ' if active else '', script)
+            print "%s%s" % ('* ' if active else '',
+                            script.encode('utf-8', 'replace'))
 
     def cmd_get(self):
         data = self.sieve.get_script(self.args.name)
-        print data
+        print data.encode('utf-8', 'replace')
 
 
 def parse_cmdline():
