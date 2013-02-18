@@ -256,6 +256,15 @@ class ManageSieveClient(object):
         script_data = unicode(response.data[0], 'utf-8', 'replace')
         return script_data
 
+    def put_script(self, name, data):
+        script_name = self._sieve_name(name)
+        script_data = self._sieve_string(data.encode('utf-8', 'replace'))
+        response = self._send_command("PUTSCRIPT", script_name, script_data)
+        if response.status != Response.OK:
+            raise CommandFailed("PUTSCRIPT", response, response.text)
+        else:
+            return response
+
     def _parse_capabilities(self, capabilities):
         if not capabilities:
             return

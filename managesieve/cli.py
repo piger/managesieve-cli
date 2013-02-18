@@ -59,7 +59,7 @@ class Client(object):
             data = fd.read()
 
         response = self.sieve.put_script(name, data)
-        print response
+        print response.text
 
 def parse_cmdline():
     description = ("managesieve-cli is a command-line utility for "
