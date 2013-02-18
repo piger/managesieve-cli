@@ -260,6 +260,7 @@ class ManageSieveClient(object):
         if response.status != Response.OK:
             raise CommandFailed("GETSCRIPT", response, response.text)
         script_data = unicode(response.data[0], 'utf-8', 'replace')
+        script_data = script_data.rstrip(u"\n")
         return script_data
 
     def put_script(self, name, data):
