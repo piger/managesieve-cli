@@ -276,6 +276,15 @@ class ManageSieveClient(object):
         else:
             return response
 
+    def delete_script(self, name):
+        name = name.encode('utf-8', 'replace')
+        script_name = self._sieve_name(name)
+        response = self._send_command("DELETESCRIPT", script_name)
+        if response.status != Response.OK:
+            raise CommandFailed("DELETESCRIPT", response, response.text)
+        else:
+            return response
+
     def _parse_capabilities(self, capabilities):
         if not capabilities:
             return

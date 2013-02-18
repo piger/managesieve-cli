@@ -80,6 +80,12 @@ class Client(object):
         response = self.sieve.set_active(script_name)
         print response.text
 
+    def cmd_delete(self):
+        script_name = unicode(self.args.name, 'utf-8', 'replace')
+        response = self.sieve.delete_script(script_name)
+        print response.text
+
+
 def parse_cmdline():
     description = ("A command-line utility for interacting with remote "
                    "managesieve servers")
