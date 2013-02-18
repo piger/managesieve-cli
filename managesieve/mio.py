@@ -94,9 +94,15 @@ class Response(object):
         self.code = code
         if text is not None:
             self.text = unicode(text, 'utf-8', 'replace')
+            self.text = self._clean_string(self.text)
         else:
             self.text = text
         self.data = data[:]
+
+    def _clean_string(self, string):
+        string = string.replace(u"\r\n", u"\n")
+        string = string.rstrip(u"\n")
+        return string
 
     def __repr__(self):
         return "<Response(%r, %r, %r, %r)>" % (self.status, self.code,
@@ -328,7 +334,9 @@ class ManageSieveClient(object):
                 # formats.
                 data = resp.get('data')
                 if data:
-                    data = self._read_text(data)[0]
+                    data = self._read_text(data)
+                    if isinstance(data, list) or isinstance(data, tuple):
+                        data = data[0]
                 response = Response(resp.get('status'), resp.get('code'), data,
                                              lines)
                 log.debug("Returning response %r" % response)
