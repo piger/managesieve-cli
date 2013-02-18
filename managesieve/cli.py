@@ -33,7 +33,7 @@ class Client(object):
                 show_error("ERROR: %s" % e)
                 sys.exit(1)
         else:
-            show_error("Invalid command: %s" % self.args.cmd)
+            show_error("Invalid or unimplemented command: %s" % self.args.cmd)
             sys.exit(1)
         sys.exit(0)
 
