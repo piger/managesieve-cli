@@ -297,9 +297,8 @@ class ManageSieveClient(object):
         return self.fd.read(size)
 
     def _read_response(self):
-        """
-        read: "IMPLEMENTATION" "dovecot"\r\n
-        """
+        """Read response data from server"""
+
         log.debug("Waiting for response")
         lines = []
         while True:
@@ -308,16 +307,6 @@ class ManageSieveClient(object):
                 raise EOFFromServer
             line = line.rstrip("\r\n")
             log.debug("Read line: %r" % line)
-
-            # Qui devo usare una regexp per controllare se è un response
-            # OK|NO|BYE; negli altri casi non è detto che mi vada bene usare
-            # shlex.split(), ad esempio in GETSCRIPT. Inoltre alcuni output
-            # usano il formato::
-            #
-            #       {bytes+} \r\n DATA...
-            #
-            # per cui sarebbe necessario (forse?) usare socket.read() con la
-            # dimensione specificata in `bytes`...
 
             stat_match = _response.match(line)
             if stat_match:
@@ -335,23 +324,6 @@ class ManageSieveClient(object):
                 data = self._read_text(line)
                 lines.append(data)
 
-            # elif lit_match:
-            #     resp = lit_match.groupdict()
-            #     size = resp.get('size')
-            #     buf = self.fd.read(int(size))
-            #     log.debug("Appending buffer %r" % (buf,))
-            #     lines.append(buf)
-
-            # elif line.startswith('"'):
-            #     tokens = shlex.split(line)
-            #     log.debug("Appending tokens %r" % (tokens,))
-            #     lines.append(tuple(tokens))
-
-            # else:
-            #     tokens = line.split(' ', 1)
-            #     log.debug("Appending tokens %r" % (tokens,))
-            #     lines.append(tuple(tokens))
-
     def _read_text(self, data):
         result = None
 
@@ -362,8 +334,8 @@ class ManageSieveClient(object):
             result = shlex.split(data)
         elif lit_match:
             resp = lit_match.groupdict()
-            size = resp.get('size')
-            buf = self.fd.read(int(size))
+            size = int(resp.get('size'))
+            buf = self._read_exactly(size)
             log.debug("Appending buffer %r" % (buf,))
             result = buf
         else:
