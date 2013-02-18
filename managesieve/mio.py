@@ -92,6 +92,10 @@ class Response(object):
             self.text = text
         self.data = data[:]
 
+    @property
+    def is_ok(self):
+        return self.status == self.OK
+
     def _clean_string(self, string):
         string = string.replace(u"\r\n", u"\n")
         string = string.rstrip(u"\n")
@@ -115,6 +119,7 @@ class ManageSieveClient(object):
         'DELETESCRIPT': ('AUTH',),
         'LISTSCRIPTS': ('AUTH',),
         'HAVESPACE': ('AUTH',),
+        'RENAMESCRIPT': ('AUTH',),
     }
 
     AUTH_PLAIN = "PLAIN"
@@ -284,6 +289,23 @@ class ManageSieveClient(object):
             raise CommandFailed("DELETESCRIPT", response, response.text)
         else:
             return response
+
+    def rename_script(self, old_name, new_name):
+        old_name = old_name.encode('utf-8', 'replace')
+        new_name = new_name.encode('utf-8', 'replace')
+        old_name = self._sieve_name(old_name)
+        new_name = self._sieve_name(new_name)
+        response = self._send_command("RENAMESCRIPT", old_name, new_name)
+        if response.status != Response.OK:
+            raise CommandFailed("RENAMESCRIPT", response, response.text)
+        else:
+            return response
+
+    def have_space(self, name, size):
+        name = name.encode('utf-8', 'replace')
+        script_name = self._sieve_name(name)
+        response = self._send_command("HAVESPACE", script_name, "%d" % size)
+        return response
 
     def _parse_capabilities(self, capabilities):
         if not capabilities:

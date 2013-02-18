@@ -85,6 +85,22 @@ class Client(object):
         response = self.sieve.delete_script(script_name)
         print response.text
 
+    def cmd_rename(self):
+        old_name = unicode(self.args.old_name, 'utf-8', 'replace')
+        new_name = unicode(self.args.new_name, 'utf-8', 'replace')
+        response = self.sieve.rename_script(old_name, new_name)
+        print response.text
+
+    def cmd_have_space(self):
+        script_name = unicode(self.args.name, 'utf-8', 'replace')
+        size = os.path.getsize(self.args.name)
+        response = self.sieve.have_space(script_name, size)
+        if response.is_ok:
+            print "Server can accept %s: %s" % (self.args.name, response.text)
+        else:
+            print "Server does not have space for %s: %s" % (
+                self.args.name, response.text)
+
 
 def parse_cmdline():
     description = ("A command-line utility for interacting with remote "
@@ -124,11 +140,6 @@ def parse_cmdline():
                          help="Name of the remote script")
     cmd_get.set_defaults(cmd="get")
 
-    # cmd_edit = subparsers.add_parser("edit", help="edit command")
-    # cmd_edit.add_argument('name', metavar='SCRIPT-NAME',
-    #                       help="Name of the remote script")
-    # cmd_edit.set_defaults(cmd="edit")
-
     cmd_activate = subparsers.add_parser(
         "activate",
         description="Activate a remote Sieve script or deactivate " \
@@ -148,8 +159,26 @@ def parse_cmdline():
                             help="Name of the remote script to delete")
     cmd_delete.set_defaults(cmd="delete")
 
-    args = parser.parse_args()
+    cmd_rename = subparsers.add_parser(
+        "rename",
+        description="Rename a remote Sieve script",
+        help="Rename a remote Sieve script")
+    cmd_rename.add_argument("old_name", metavar="SCRIPT-NAME",
+                            help="Name of the Sieve script to be renamed")
+    cmd_rename.add_argument("new_name", metavar="DESTINATION",
+                            help="Destination name")
+    cmd_rename.set_defaults(cmd="rename")
 
+    cmd_havespace = subparsers.add_parser(
+        "have_space",
+        description="Check if the quota on the remote server permits " \
+        "the upload of a Sieve script",
+        help="Peform a HAVESPACE command for a local Sieve script")
+    cmd_havespace.add_argument("name", metavar="FILENAME",
+                               help="Absolute path of a local Sieve script")
+    cmd_havespace.set_defaults(cmd="have_space")
+
+    args = parser.parse_args()
     return args
 
 
