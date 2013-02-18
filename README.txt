@@ -1,17 +1,19 @@
 .. -*- mode: rst ; ispell-local-dictionary: "american" -*-
 
-===============
+=============
 `managesieve`
-===============
+=============
 
--------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------
 A ManageSieve client library for remotely managing Sieve scripts, including an user application (the interactive 'sieveshell').
--------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------
 
-:Author:  Hartmut Goebel <h.goebel@crazy-compiler.com>
-:Version: 0.4.2
+:Author:  Daniel Kertesz <daniel@spatof.org>
+:Version: 0.4.4
 :Copyright: GNU Public License v3 (GPLv3)
 :Homepage: http://packages.python.org/managesieve
+
+This is a rewrite of the original `managesieve` package.
 
 Sieve scripts allow users to filter incoming email on the mail server.
 The ManageSieve protocol allows managing Sieve scripts on a remote
@@ -25,14 +27,20 @@ This module allows accessing a Sieve-Server for managing Sieve scripts
 there. It is accompanied by a simple yet functional user application
 'sieveshell'.
 
+Changes since 0.4.2
+~~~~~~~~~~~~~~~~~~~
+  - Major rewrite, probably introduced some new fresh bugs :-)
+  - Support for a configuration file, obtainin password from
+    the output of an external command, password via stdin.
+
 Changes since 0.4
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
   - fixed short read (thanks to paurkedal for submitting the patch)
   - Use ssl.wrap_socket() instead of deprecated socket.ssl().
     Thanks to Guido Berhoerster for submitting the patch.
 
 Changes since 0.3
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 :managesieve:
   - now works with Python 2.3 and later
   - added support for TLS (STARTTLS), special thanks to Gregory Boyce
@@ -54,7 +62,7 @@ Changes since 0.3
 
 
 Requirements and Installation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 `managesieve` requires
 
@@ -92,27 +100,27 @@ __ http://pypi.python.org/pypi/setuptools
 
 
 Installing managesieve
----------------------------------
+----------------------
 
 When you are reading this you most probably already downloaded and
 unpacked `managesieve`. Thus installing is as easy as running::
 
-   python ./setup.py install
+    python ./setup.py install
 
 Otherwise you may install directly using setuptools/easy_install. If
 your system has network access installing `managesieve` is a
 breeze::
 
-     easy_install managesieve
+    easy_install managesieve
 
 Without network access download `managesieve` from
 http://pypi.python.org/pypi/managesieve and run::
 
-     easy_install managesieve-*.tar.gz
+    easy_install managesieve-*.tar.gz
 
 
 More Hints on Installing setuptools
-------------------------------------
+-----------------------------------
 
 `managesieve` uses setuptools for installation. Thus you need either
 
@@ -130,18 +138,17 @@ __ http://peak.telecommunity.com/DevCenter/EasyInstall#installation-instructions
 
 
 Custom Installation Locations
-------------------------------
+-----------------------------
 
 If you want to install the `managesieve` Python module and the
 `sieveshell` script at a custom location, you can use commands like
 this::
 
-   # install to /usr/local/lib/ and /usr/local/bin
-   python ./setup.py install --prefix /usr/local
+    # install to /usr/local/lib/ and /usr/local/bin
+    python ./setup.py install --prefix /usr/local
 
-   # install to your Home directory (~/bin and ~/lib/python)
-   python ./setup.py install --home ~
-
+    # install to your Home directory (~/bin and ~/lib/python)
+    python ./setup.py install --home ~
 
 Please mind: This effects also the installation of `logging` (and
 setuptools) if they are not already installed.
@@ -153,14 +160,15 @@ __ http://peak.telecommunity.com/DevCenter/EasyInstall#custom-installation-locat
 
 
 Not yet implemented
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 - sieve-names are only quoted dump (put into quotes, but no escapes yet).
 
 
 Copyright/License
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
+Copyright (C) 2013 by Daniel Kertesz <daniel@spatof.rog>
 Copyright (C) 2003-2011 by Hartmut Goebel <h.goebel@crazy-compilers.com>
 
 License: Python Software Foundation License
@@ -170,7 +178,7 @@ License for 'sieveshell' and test suite: GPL
 	http://www.opensource.org/licenses/gpl-license.php
 
 Credits
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~
 
 Based on Sieve.py from Ulrich Eck <ueck@net-labs.de> which is part of
 of 'ImapClient' (see http://www.zope.org/Members/jack-e/ImapClient), a

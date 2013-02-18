@@ -1,3 +1,9 @@
+Version 0.4.4 by Daniel Kertesz <daniel at spatof.org>
+--------------------------------------------------------------------
+:managesieve:
+  - Major rewrite, new command line utility: managesieve-cli.
+
+
 Version XXX by Hartmut Goebel <h.goebel at crazy-compilers.com>
 --------------------------------------------------------------------
 :sieveshell:
