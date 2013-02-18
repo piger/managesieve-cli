@@ -54,24 +54,30 @@ class Client(object):
                             script.encode('utf-8', 'replace'))
 
     def cmd_get(self):
-        data = self.sieve.get_script(self.args.name)
+        script_name = unicode(self.args.name, 'utf-8', 'replace')
+        data = self.sieve.get_script(script_name)
         print data.encode('utf-8', 'replace')
 
     def cmd_put(self):
-        data = None
         if self.args.destfile:
-            name = self.args.destfile
+            script_dest = self.args.destfile
         else:
-            name = os.path.basename(self.args.name)
+            script_dest = os.path.basename(self.args.name)
 
+        script_dest = unicode(script_dest, 'utf-8', 'replace')
+        data = None
         with codecs.open(self.args.name, 'r', 'utf-8') as fd:
             data = fd.read()
 
-        response = self.sieve.put_script(name, data)
+        response = self.sieve.put_script(script_dest, data)
         print response.text
 
     def cmd_activate(self):
-        response = self.sieve.set_active(self.args.name or '')
+        if self.args.name:
+            script_name = unicode(self.args.name, 'utf-8', 'replace')
+        else:
+            script_name = u""
+        response = self.sieve.set_active(script_name)
         print response.text
 
 def parse_cmdline():

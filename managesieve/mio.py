@@ -249,6 +249,7 @@ class ManageSieveClient(object):
             raise CommandFailed("LISTSCRIPTS", response, response.text)
 
     def get_script(self, name):
+        name = name.encode('utf-8', 'replace')
         response = self._send_command("GETSCRIPT", self._sieve_name(name))
         if response.status != Response.OK:
             raise CommandFailed("GETSCRIPT", response, response.text)
@@ -257,6 +258,7 @@ class ManageSieveClient(object):
         return script_data
 
     def put_script(self, name, data):
+        name = name.encode('utf-8', 'replace')
         script_name = self._sieve_name(name)
         script_data = self._sieve_string(data.encode('utf-8', 'replace'))
         response = self._send_command("PUTSCRIPT", script_name, script_data)
@@ -266,6 +268,7 @@ class ManageSieveClient(object):
             return response
 
     def set_active(self, name):
+        name = name.encode('utf-8', 'replace')
         script_name = self._sieve_name(name)
         response = self._send_command("SETACTIVE", script_name)
         if response.status != Response.OK:
