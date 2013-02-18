@@ -18,6 +18,7 @@ NO "Error in MANAGESIEVE command received by server."
 [2]    50709 interrupt  nc spatof.org 4190
 
 """
+import re
 import shlex
 import logging
 import socket
@@ -33,6 +34,9 @@ except ImportError:
 
 
 log = logging.getLogger(__name__)
+
+
+_literal = re.compile(r'{(?P<size>\d+)\+?}$')
 
 
 class ManageSieveClientError(Exception): pass
@@ -207,6 +211,13 @@ class ManageSieveClient(object):
         else:
             raise CommandFailed("LISTSCRIPTS failed: %r" % response)
 
+    def get_script(self, name):
+        response = self._send_command("GETSCRIPT", self._sieve_name(name))
+        if response.status != Response.OK:
+            log.debug("GETSCRIPT for %s failed: %r" % (name, response))
+            return response
+        return response.data
+
     def _parse_capabilities(self, capabilities):
         if not capabilities:
             return
@@ -256,9 +267,23 @@ class ManageSieveClient(object):
                 raise EOFFromServer
             line = line.rstrip("\r\n")
             log.debug("Read line: %r" % line)
+
+            # Qui devo usare una regexp per controllare se è un response
+            # OK|NO|BYE; negli altri casi non è detto che mi vada bene usare
+            # shlex.split(), ad esempio in GETSCRIPT. Inoltre alcuni output
+            # usano il formato::
+            #
+            #       {bytes+} \r\n DATA...
+            #
+            # per cui sarebbe necessario (forse?) usare socket.read() con la
+            # dimensione specificata in `bytes`...
+
+
             tokens = shlex.split(line)
             if not tokens:
-                raise InvalidResponse("Empty tokens from split: %r" % line)
+                #raise InvalidResponse("Empty tokens from split: %r" % line)
+                log.debug("Empty tokens")
+                continue
 
             if tokens[0] in ('OK', 'NO', 'BYE'):
                 status = tokens.pop(0)

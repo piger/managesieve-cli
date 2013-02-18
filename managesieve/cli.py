@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import argparse
 import logging
+from pprint import pprint
 from config import parse_config_file
 from utils import exec_command
 from .mio import ManageSieveClient
@@ -27,6 +28,8 @@ def parse_cmdline():
     cmd_put.set_defaults(cmd="put")
 
     cmd_get = subparsers.add_parser("get", help="get command")
+    cmd_get.add_argument('name', metavar='SCRIPT-NAME',
+                         help="Name of the remote script")
     cmd_get.add_argument('-d', '--destfile', help="dest file")
     cmd_get.set_defaults(cmd="get")
 
@@ -52,6 +55,11 @@ def cmd_list(args, sieve):
 
     for script, active in scripts:
         print "%s%s" % ('* ' if active else '', script)
+
+
+def cmd_get(args, sieve):
+    data = sieve.get_script(args.name)
+    pprint(data)
 
 
 def run_command(args, config, account_config):
@@ -84,8 +92,10 @@ def run_command(args, config, account_config):
 
     if args.cmd == "list":
         cmd_list(args, sieve)
+    elif args.cmd == "get":
+        cmd_get(args, sieve)
     else:
-        print "Unknown command"
+        raise RuntimeError("You must write the code for that command :-P")
 
 
 def main():
