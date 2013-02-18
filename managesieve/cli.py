@@ -70,6 +70,10 @@ class Client(object):
         response = self.sieve.put_script(name, data)
         print response.text
 
+    def cmd_activate(self):
+        response = self.sieve.set_active(self.args.name or '')
+        print response.text
+
 def parse_cmdline():
     description = ("managesieve-cli is a command-line utility for "
                    "interacting with remote managesieve servers")
@@ -103,7 +107,7 @@ def parse_cmdline():
     cmd_edit.set_defaults(cmd="edit")
 
     cmd_activate = subparsers.add_parser("activate", help="activate command")
-    cmd_activate.add_argument('name', metavar='SCRIPT-NAME',
+    cmd_activate.add_argument('name', metavar='SCRIPT-NAME', nargs='?',
                               help="Name of the remote script")
     cmd_activate.set_defaults(cmd="activate")
 

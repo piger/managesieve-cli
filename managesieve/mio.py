@@ -265,6 +265,14 @@ class ManageSieveClient(object):
         else:
             return response
 
+    def set_active(self, name):
+        script_name = self._sieve_name(name)
+        response = self._send_command("SETACTIVE", script_name)
+        if response.status != Response.OK:
+            raise CommandFailed("PUTSCRIPT", response, response.text)
+        else:
+            return response
+
     def _parse_capabilities(self, capabilities):
         if not capabilities:
             return
