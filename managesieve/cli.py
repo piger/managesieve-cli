@@ -14,10 +14,9 @@ import sys
 import argparse
 import logging
 import codecs
-from pprint import pprint
 from config import parse_config_file
 from utils import exec_command
-from .mio import ManageSieveClient, CommandFailed
+from . import ManageSieveClient, CommandFailed
 
 
 log = logging.getLogger(__name__)

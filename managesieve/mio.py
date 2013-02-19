@@ -18,8 +18,6 @@ import shlex
 import logging
 import socket
 import binascii
-from pprint import pprint
-from . import SSLFakeSocket, SSLFakeFile
 
 try:
     import ssl
@@ -104,6 +102,51 @@ class Response(object):
     def __repr__(self):
         return "<Response(%r, %r, %r, %r)>" % (self.status, self.code,
                                                self.text, self.data)
+
+
+class SSLFakeSocket:
+    """A fake socket object that really wraps a SSLObject.
+    
+    It only supports what is needed in managesieve.
+    """
+    def __init__(self, realsock, sslobj):
+        self.realsock = realsock
+        self.sslobj = sslobj
+
+    def send(self, str):
+        self.sslobj.write(str)
+        return len(str)
+
+    sendall = send
+
+    def close(self):
+        self.realsock.close()
+
+
+class SSLFakeFile:
+    """A fake file like object that really wraps a SSLObject.
+
+    It only supports what is needed in managesieve.
+    """
+    def __init__(self, sslobj):
+        self.sslobj = sslobj
+
+    def readline(self):
+        str = ""
+        chr = None
+        while chr != "\n":
+            chr = self.sslobj.read(1)
+            str += chr
+        return str
+
+    def read(self, size=0):
+        if size == 0:
+            return ''
+        else:
+            return self.sslobj.read(size)
+
+    def close(self):
+        pass
 
 
 class ManageSieveClient(object):
