@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 """
 sieveshell - remotely manipulate sieve scripts
 
@@ -29,11 +29,18 @@ The following commands are recognized:
 
 __version__ = "0.4"
 __author__ = "Hartmut Goebel <h.goebel@crazy-compilers.com>"
-__copyright = "(c) Coypright 2003 by Hartmut Goebel <h.goebel@crazy-compilers.com>"
+__copyright__ = "Copyright (C) 2003-2011 by Hartmut Goebel <h.goebel@crazy-compilers.com>"
 __license__ = "GPL"
 
 
-import sys, getpass, inspect, managesieve, os
+import sys
+import getpass
+import inspect
+import managesieve
+import os
+from .utils import read_config_defaults, exec_command
+
+
 sieve = None
 
 SUPPRESS = '--suppress--' # token for suppressing 'OK' after cmd execution
@@ -225,7 +232,7 @@ __command_map = {
 
 
 def shell(auth, user=None, passwd=None, realm=None,
-          authmech='', server='', use_tls=0):
+          authmech='', server='', use_tls=0, port=managesieve.SIEVE_PORT):
     """Main part"""
 
     def cmd_loop():
@@ -280,7 +287,7 @@ def shell(auth, user=None, passwd=None, realm=None,
             # Ctrl-D pressed
             print # clear line
             return
-        sieve = managesieve.MANAGESIEVE(server, use_tls=use_tls)
+        sieve = managesieve.MANAGESIEVE(server, port=port, use_tls=use_tls)
         print 'Server capabilities:',
         for c in sieve.capabilities: print c,
         print
@@ -330,7 +337,22 @@ def main():
                             "commands from SCRIPT, and exit when done.")
     parser.add_option('--use-tls', '--tls', action="store_true",
                       help="Switch to TLS if server supports it.")
+    parser.add_option('--port', type="int", default=managesieve.SIEVE_PORT,
+                      help="port number to connect to (default: %default)")
+    parser.add_option('-v', '--verbose', action='count', default=0,
+                      help='Be verbose. May be given several times to increase verbosity')
+    parser.add_option('-x', '--password-command', dest='password_command',
+                      help="Shell command to execute to get the password")
+
+    config_file = os.environ.get("MANAGESIEVE_CONFIG")
+    if config_file:
+        read_config_defaults(config_file, parser)
+
     options, args = parser.parse_args()
+
+    # handle password-command
+    if options.password_command:
+        options.passwd = exec_command(options.password_command)
 
     if options.auth_mech and not options.auth_mech.upper() in managesieve.AUTHMECHS:
         parser.error("Authentication mechanism %s is not supported. Choose one of %s" % (options.auth_mech.upper(), ', '.join(managesieve.AUTHMECHS)))
@@ -339,11 +361,20 @@ def main():
         parser.error("Argument 'server' missing.")
     server = args[0]
 
+    if options.verbose:
+        level = managesieve.INFO
+        if options.verbose > 1:
+            level = managesieve.DEBUG0 - (options.verbose-2)
+        import logging
+        logging.basicConfig(level=level, format="%(message)s")
+
     shell(options.authname, options.username, options.passwd,
-          options.realm, options.auth_mech, server, options.use_tls)
+          options.realm, options.auth_mech, server, options.use_tls,
+          options.port)
     return 0
 
 
 if __name__ == "__main__":
-    #managesieve.Debug = 4
+    if __doc__ is None:
+        raise SystemExit('Must not be run with Python option -OO (removed doc-strings)')
     raise SystemExit(main())

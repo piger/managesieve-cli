@@ -1,0 +1,102 @@
+.. -*- mode: rst ; ispell-local-dictionary: "american" -*-
+
+===============
+`managesieve`
+===============
+
+-------------------------------------------------------------------------------------------------------------------------------------
+A ManageSieve client library for remotely managing Sieve scripts, including an user application (the interactive 'sieveshell').
+-------------------------------------------------------------------------------------------------------------------------------------
+
+.. Contents:
+
+.. toctree::
+   :maxdepth: 2
+
+
+
+:Author:  Hartmut Goebel <h.goebel@crazy-compiler.com>
+:Copyright: GNU Public License v3 (GPLv3)
+:Homepage: http://packages.python.org/managesieve
+:Download: http://pypi.python.org/pypi/managesieve
+
+python-managesieve is a pure `Python <http://www.python.org/>`_ module
+implementing the ManageSieve client protocol. It also includes an user
+application (the interactive `sieveshell`).
+
+..
+  Find more info here:
+  * [[path:download|Downloads]]
+  * If you want to report an issue - please refer to the [[path:issues|issue tracker]].
+
+What is this ManageSieve thing?
+====================================
+
+The ManageSieve protocol allows managing Sieve scripts on a remote
+mail server. Sieve scripts allow users to filter incoming email on the
+mail server. These servers are commonly sealed so users cannot log
+into them, yet users must be able to update their scripts on them.
+This is what for the "ManageSieve" protocol is. For more information
+about the ManageSieve protocol see `the ManageSieve Internet draft
+<http://www.ietf.org/internet-drafts/draft-martin-managesieve-07.txt>`_.
+
+This module allows accessing a Sieve-Server for managing Sieve scripts
+there. It is accompanied by a simple yet functional user application
+`sieveshell`.
+
+What is this `sieveshell`?
+================================
+
+`sieveshell` is a command line tool for talking to the Sieve server.
+One can
+
+* list scripts on the server
+* upload scripts to the server
+* display scripts stored on the server and download or edit them
+* delete scripts stored on the server
+* activate and deactivate scripts
+
+`sieveshell` is useful for user who wish to manage sieve scripts
+without installing a fat GUI-based mail client.
+
+
+Development
+====================
+
+Source Code Repository
+----------------------------
+
+The source of `managesieve` is maintained at
+`gitorious.org <http://www.gitorious.org>`_
+
+* You may browse the current repository at the
+  `Repository Browser 
+  <https://www.gitorious.org/managesieve/managesieve>`_
+
+* Or you may check out the current version by running::
+
+    git clone git://gitorious.org/managesieve/managesieve.git
+
+Issue Tracker
+----------------
+
+Sorry, since we needed to move away from origo, we currently do not
+have an issue tracker. Tips where good hosted trackers are available
+are welcome.
+
+
+Historical Note
+====================
+
+`managesieve` was hosted at origo.ethz.ch, but this site closed
+at 2012-05-31.
+
+
+..
+  Indices and tables
+  ==================
+
+  * :ref:`genindex`
+  * :ref:`modindex`
+  * :ref:`search`
+

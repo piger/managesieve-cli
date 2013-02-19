@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-
 """Setup script for the managesieve"""
 
 import ez_setup
@@ -13,10 +13,14 @@ from distutils.command.bdist_rpm import bdist_rpm
 # patch distutils if it can't cope with the "classifiers" or
 # "download_url" keywords
 import sys
-if sys.version < '2.2.3':
+if sys.version_info < (2,2,3):
     from distutils.dist import DistributionMetadata
     DistributionMetadata.classifiers = None
     DistributionMetadata.download_url = None
+
+install_requires = []
+if sys.version_info < (2,3):
+    install_requires.append('logging')
 
 
 class MyBDist_RPM(bdist_rpm):
@@ -34,38 +38,44 @@ class MyBDist_RPM(bdist_rpm):
         bdist_rpm.finalize_options(self)
 
 
-setup (name = "managesieve",
-       version = "0.4.2",
-       description = description,
-       long_description = open('README').read().strip(),
-       author = "Hartmut Goebel",
-       author_email = "h.goebel@crazy-compilers.com",
-       #maintainer = "Hartmut Goebel",
-       #maintainer_email = "h.goebel@crazy-compilers.com",
-       url = "http://python-managesieve.origo.ethz.ch/",
-       download_url = "http://python-managesieve.origo.ethz.ch/download",
-       license = 'Python',
-       platforms = ['POSIX'],
-       keywords = ['sieve', 'managesieve', 'sieveshell'],
-       py_modules = ['managesieve'],
-       scripts = ['sieveshell'],
-       cmdclass = {'bdist_rpm': MyBDist_RPM},
-       classifiers = [
-          'Development Status :: 5 - Production/Stable',
-          'Environment :: Console',
-          'Intended Audience :: End Users/Desktop',
-          'Intended Audience :: Developers',
-          #'Intended Audience :: System Administrators',
-          'License :: OSI Approved :: Python Software Foundation License',
-          'License :: OSI Approved :: GNU General Public License (GPL)',
-          'Natural Language :: English',
-          #'Operating System :: MacOS :: MacOS X',
-          #'Operating System :: Microsoft :: Windows',
-          #'Operating System :: POSIX',
-          'Operating System :: OS Independent',
-          'Programming Language :: Python',
-          'Topic :: Communications :: Email',
-          'Topic :: Software Development :: Libraries :: Python Modules',
-          'Topic :: Utilities'
-          ],
-     )
+setup(
+    name = "managesieve",
+    version = "0.4.4-dev",
+    description = description,
+    long_description = open('README.txt').read().strip(),
+    author = "Daniel Kertesz",
+    author_email = "daniel@spatof.org",
+    #maintainer = "Hartmut Goebel",
+    #maintainer_email = "h.goebel@crazy-compilers.com",
+    url = "http://packages.python.org/managesieve",
+    download_url = "http://pypi.python.org/pypi/managesieve",
+    license = 'Python',
+    platforms = ['POSIX'],
+    keywords = ['sieve', 'managesieve', 'sieveshell', 'RFC 5804'],
+    packages = ['managesieve'],
+    install_requires = install_requires,
+    cmdclass = {'bdist_rpm': MyBDist_RPM},
+    classifiers = [
+        'Development Status :: 5 - Production/Stable',
+        'Environment :: Console',
+        'Intended Audience :: End Users/Desktop',
+        'Intended Audience :: Developers',
+        #'Intended Audience :: System Administrators',
+        'License :: OSI Approved :: Python Software Foundation License',
+        'License :: OSI Approved :: GNU General Public License (GPL)',
+        'Natural Language :: English',
+        #'Operating System :: MacOS :: MacOS X',
+        #'Operating System :: Microsoft :: Windows',
+        #'Operating System :: POSIX',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Topic :: Communications :: Email',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Utilities'
+    ],
+    entry_points={
+        "console_scripts": [
+            "managesieve-cli = managesieve.cli:main",
+        ],
+    },
+)

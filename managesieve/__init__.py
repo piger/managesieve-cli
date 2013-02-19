@@ -1,7 +1,7 @@
-"""Sieve management client.
+# -*- coding: utf-8 -*-
+"""Sieve management client module
 
-A Protocol for Remotely Managing Sieve Scripts
-Based on <draft-martin-managesieve-04.txt>
+A Protocol for Remotely Managing Sieve Scripts, RFC 5804
 """
 
 __version__ = "0.4.2"
@@ -9,60 +9,33 @@ __author__ = """Hartmut Goebel <h.goebel@crazy-compilers.com>
 Ulrich Eck <ueck@net-labs.de> April 2001
 """
 
-import binascii, re, socket, time, random, sys
+__copyright__ = "Copyright (C) 2003-2011 by Hartmut Goebel <h.goebel@crazy-compilers.com> and others"
+__license__ = "Python-2.0 like"
+
+
+import re
+import logging
+import socket
+import binascii
 try:
     import ssl
     ssl_wrap_socket = ssl.wrap_socket
 except ImportError:
     ssl_wrap_socket = socket.ssl
 
-__all__ = [ 'MANAGESIEVE', 'SIEVE_PORT', 'OK', 'NO', 'BYE', 'Debug']
 
-Debug = 0
-CRLF = '\r\n'
-SIEVE_PORT = 2000
+log = logging.getLogger(__name__)
 
-OK = 'OK'
-NO = 'NO'
-BYE = 'BYE'
-
-AUTH_PLAIN = "PLAIN"
-AUTH_LOGIN = "LOGIN"
-# authentication mechanisms currently supported
-# in order of preference
-AUTHMECHS = [AUTH_PLAIN, AUTH_LOGIN]
-
-# todo: return results or raise exceptions?
-# todo: on result 'BYE' quit immediatly
-# todo: raise exception on 'BYE'?
-
-#    Commands
-commands = {
-    # name          valid states
-    'STARTTLS':     ('NONAUTH',),
-    'AUTHENTICATE': ('NONAUTH',),
-    'LOGOUT':       ('NONAUTH', 'AUTH', 'LOGOUT'),
-    'CAPABILITY':   ('NONAUTH', 'AUTH'),
-    'GETSCRIPT':    ('AUTH', ),
-    'PUTSCRIPT':    ('AUTH', ),
-    'SETACTIVE':    ('AUTH', ),
-    'DELETESCRIPT': ('AUTH', ),
-    'LISTSCRIPTS':  ('AUTH', ),
-    'HAVESPACE':    ('AUTH', ),
-    # bogus command to receive a NO after STARTTLS (see starttls() )
-    'BOGUS':         ('NONAUTH', 'AUTH', 'LOGOUT'),
-    }
-
-### needed
-Oknobye = re.compile(r'(?P<type>(OK|NO|BYE))'
+_re_oknobye = re.compile(r'(?P<type>(OK|NO|BYE))'
                      r'( \((?P<code>.*)\))?'
                      r'( (?P<data>.*))?')
+
 # draft-martin-managesieve-04.txt defines the size tag of literals to
 # contain a '+' (plus sign) behind the digits, but timsieved does not
 # send one. Thus we are less strikt here:
-Literal = re.compile(r'.*{(?P<size>\d+)\+?}$')
-re_dquote  = re.compile(r'"(([^"\\]|\\.)*)"')
-re_esc_quote = re.compile(r'\\([\\"])')
+_re_literal = re.compile(r'.*{(?P<size>\d+)\+?}$')
+_re_dquote  = re.compile(r'"(([^"\\]|\\.)*)"')
+_re_esc_quote = re.compile(r'\\([\\"])')
 
 
 class SSLFakeSocket:
@@ -82,6 +55,7 @@ class SSLFakeSocket:
 
     def close(self):
         self.realsock.close()
+
 
 class SSLFakeFile:
     """A fake file like object that really wraps a SSLObject.
@@ -109,15 +83,11 @@ class SSLFakeFile:
         pass
 
 
-def sieve_name(name):
-    # todo: correct quoting
-    return '"%s"' % name
-
-def sieve_string(string):
-    return '{%d+}%s%s' % ( len(string), CRLF, string )
+class ManageSieveError(Exception): pass
+class ManageSieveAbort(ManageSieveError): pass
 
 
-class MANAGESIEVE:
+class ManageSieve(object):
     """Sieve client class.
 
     Instantiate with: MANAGESIEVE(host [, port])
@@ -163,8 +133,38 @@ class MANAGESIEVE:
     the results.
     """
 
-    class error(Exception): """Logical errors - debug required"""
-    class abort(error):     """Service errors - close and retry"""
+    CRLF = '\r\n'
+    SIEVE_PORT = 2000
+
+    OK = 'OK'
+    NO = 'NO'
+    BYE = 'BYE'
+
+    AUTH_PLAIN = "PLAIN"
+    AUTH_LOGIN = "LOGIN"
+    # authentication mechanisms currently supported
+    # in order of preference
+    AUTHMECHS = [AUTH_PLAIN, AUTH_LOGIN]
+
+    # todo: return results or raise exceptions?
+    # todo: on result 'BYE' quit immediatly
+    # todo: raise exception on 'BYE'?
+    
+    # Commands
+    commands = {
+        # name          valid states
+        'STARTTLS':     ('NONAUTH',),
+        'AUTHENTICATE': ('NONAUTH',),
+        'LOGOUT':       ('NONAUTH', 'AUTH', 'LOGOUT'),
+        'CAPABILITY':   ('NONAUTH', 'AUTH'),
+        'GETSCRIPT':    ('AUTH', ),
+        'PUTSCRIPT':    ('AUTH', ),
+        'SETACTIVE':    ('AUTH', ),
+        'DELETESCRIPT': ('AUTH', ),
+        'LISTSCRIPTS':  ('AUTH', ),
+        'HAVESPACE':    ('AUTH', ),
+    }
+
 
     def __clear_knowledge(self):
         """clear/init any knowledge obtained from the server"""
@@ -177,7 +177,6 @@ class MANAGESIEVE:
                  use_tls=False, keyfile=None, certfile=None):
         self.host = host
         self.port = port
-        self.debug = Debug
         self.state = 'NONAUTH'
 
         self.response_text = self.response_code = None
@@ -186,12 +185,7 @@ class MANAGESIEVE:
         # Open socket to server.
         self._open(host, port)
 
-        if __debug__:
-            self._cmd_log_len = 10
-            self._cmd_log_idx = 0
-            self._cmd_log = {}           # Last `_cmd_log_len' interactions
-            if self.debug >= 1:
-                self._mesg('managesieve version %s' % __version__)
+        log.info('managesieve version %s', __version__)
 
         # Get server welcome message,
         # request and store CAPABILITY response.
@@ -204,6 +198,15 @@ class MANAGESIEVE:
                 self._parse_capabilities(data)
 
 
+    def _sieve_name(self, name):
+        # todo: correct quoting
+        return '"%s"' % name
+
+
+    def _sieve_string(self, string):
+        return '{%d+}%s%s' % ( len(string), self.CRLF, string )
+
+
     def _parse_capabilities(self, lines):
         for line in lines:
             if len(line) == 2:
@@ -212,9 +215,7 @@ class MANAGESIEVE:
                 assert len(line) == 1, 'Bad Capabilities line: %r' % line
                 typ = line[0]
                 data = None
-            if __debug__:
-                if self.debug >= 3:
-                    self._mesg('%s: %r' % (typ, data))
+            log.debug('%s: %r', typ, data)
             if typ == "IMPLEMENTATION":
                 self.implementation = data
             elif typ == "SASL":
@@ -232,7 +233,7 @@ class MANAGESIEVE:
 
     def __getattr__(self, attr):
         #    Allow UPPERCASE variants of MANAGESIEVE command methods.
-        if commands.has_key(attr):
+        if self.commands.has_key(attr):
             return getattr(self, attr.lower())
         raise AttributeError("Unknown MANAGESIEVE command: '%s'" % attr)
 
@@ -252,7 +253,7 @@ class MANAGESIEVE:
         """Read 'size' bytes from remote."""
 	data = ""
 	while len(data) < size:
-	    data += self.file.read(size - len(data))
+            data += self.file.read(size - len(data))
 	return data
 
     def _readline(self):
@@ -265,14 +266,10 @@ class MANAGESIEVE:
     def _get_line(self):
         line = self._readline()
         if not line:
-            raise self.abort('socket error: EOF')
-        # Protocol mandates all lines terminated by CRLF
+            raise ManageSieveAbort('socket error: EOF')
+        # Protocol mandates all lines terminated by self.CRLF
         line = line[:-2]
-        if __debug__:
-            if self.debug >= 4:
-                self._mesg('< %s' % line)
-            else:
-                self._log('< %s' % line)
+        log.debug('< %s', line)
         return line
 
     def _simple_command(self, *args):
@@ -296,46 +293,37 @@ class MANAGESIEVE:
         The responce code and text may be found in <instance>.response_code
         and <instance>.response_text, respectivly.
         """
-        if self.state not in commands[name]:
-            raise self.error(
-                'Command %s illegal in state %s' % (name, self.state))
+        if self.state not in self.commands[name]:
+            raise ManageSieveError('Command %s illegal in state %s' %
+                                   (name, self.state))
         # concatinate command and arguments (if any)
         data = " ".join(filter(None, (name, arg1, arg2)))
-        if __debug__:
-            if self.debug >= 4: self._mesg('> %r' % data)
-            else: self._log('> %s' % data)
+        log.debug('> %s', data)
         try:
             try:
-                self._send('%s%s' % (data, CRLF))
+                self._send('%s%s' % (data, self.CRLF))
                 for o in options:
-                    if __debug__:
-                        if self.debug >= 4: self._mesg('> %r' % o)
-                        else: self._log('> %r' % data)
-                    self._send('%s%s' % (o, CRLF))
+                    log.debug('> %r', o)
+                    self._send('%s%s' % (o, self.CRLF))
             except (socket.error, OSError), val:
-                raise self.abort('socket error: %s' % val)
+                raise ManageSieveAbort("socket error: %s" % val)
             return self._get_response()
-        except self.abort, val:
-            if __debug__:
-                if self.debug >= 1:
-                    self.print_log()
+        except ManageSieveAbort, val:
             raise
 
 
     def _readstring(self, data):
         if data[0] == ' ': # space -> error
-            raise self.error('Unexpected space: %r' % data)
+            raise ManageSieveError('Unexpected space: %r' % data)
         elif data[0] == '"': # handle double quote:
-            if not self._match(re_dquote, data):
-                raise self.error('Unmatched quote: %r' % data)
+            if not self._match(_re_dquote, data):
+                raise ManageSieveError('Unmatched quote: %r' % data)
             snippet = self.mo.group(1)
-            return re_esc_quote.sub(r'\1', snippet), data[self.mo.end():]
-        elif self._match(Literal, data):
+            return _re_esc_quote.sub(r'\1', snippet), data[self.mo.end():]
+        elif self._match(_re_literal, data):
             # read a 'literal' string
             size = int(self.mo.group('size'))
-            if __debug__:
-                if self.debug >= 4:
-                    self._mesg('read literal size %s' % size)
+            log.debug('read literal size %s', size)
             return self._read(size), self._get_line()
         else:
             data = data.split(' ', 1)
@@ -378,11 +366,9 @@ class MANAGESIEVE:
         data = [] ; dat = None
         resp = self._get_line()
         while 1:
-            if self._match(Oknobye, resp):
+            if self._match(_re_oknobye, resp):
                 typ, code, dat = self.mo.group('type','code','data')
-                if __debug__:
-                    if self.debug >= 1:
-                        self._mesg('%s response: %s %s' % (typ, code, dat))
+                log.debug('%s response: %s %s', typ, code, dat)
                 self.response_code = code
                 self.response_text = None
                 if dat:
@@ -404,11 +390,8 @@ class MANAGESIEVE:
                 dat = []
                 while 1:
                     dat1, resp = self._readstring(resp)
-                    if __debug__:
-                        if self.debug >= 4:
-                            self._mesg('read: %r' % (dat1,))
-                        if self.debug >= 5:
-                            self._mesg('rest: %r' % (resp,))
+                    log.debug('read: %r', dat1)
+                    log.debug('rest: %r', resp)
                     dat.append(dat1)
                     if not resp.startswith(' '):
                         break
@@ -417,47 +400,17 @@ class MANAGESIEVE:
                     dat.append(None)
                 data.append(dat)
                 resp = self._get_line()
-        return self.error('Should not come here')
+        return ManageSieveError('Should not come here')
 
 
     def _match(self, cre, s):
         # Run compiled regular expression match method on 's'.
         # Save result, return success.
         self.mo = cre.match(s)
-        if __debug__:
-            if self.mo is not None and self.debug >= 5:
-                self._mesg("\tmatched r'%s' => %s" % (cre.pattern, `self.mo.groups()`))
+        if self.mo is not None:
+            log.debug("\tmatched '%r' => %r", cre.pattern, self.mo.groups())
         return self.mo is not None
 
-
-    if __debug__:
-
-        def _mesg(self, s, secs=None):
-            if secs is None:
-                secs = time.time()
-            tm = time.strftime('%M:%S', time.localtime(secs))
-            sys.stderr.write('  %s.%02d %s\n' % (tm, (secs*100)%100, s))
-            sys.stderr.flush()
-
-        def _log(self, line):
-            # Keep log of last `_cmd_log_len' interactions for debugging.
-            self._cmd_log[self._cmd_log_idx] = (line, time.time())
-            self._cmd_log_idx += 1
-            if self._cmd_log_idx >= self._cmd_log_len:
-                self._cmd_log_idx = 0
-
-        def print_log(self):
-            self.self._mesg('last %d SIEVE interactions:' % len(self._cmd_log))
-            i, n = self._cmd_log_idx, self._cmd_log_len
-            while n:
-                try:
-                    self.self._mesg(*self._cmd_log[i])
-                except:
-                    pass
-                i += 1
-                if i >= self._cmd_log_len:
-                    i = 0
-                n -= 1
 
     ### Public methods ###
     def authenticate(self, mechanism, *authobjects):
@@ -466,25 +419,25 @@ class MANAGESIEVE:
         # response-authenticate = *(string CRLF) (response-oknobye)
         mech = mechanism.upper()
         if not mech in self.loginmechs:
-            raise self.error("Server doesn't allow %s authentication." % mech)
+            raise ManageSieveError("Server doesn't allow %s authentication." % mech)
 
-        if mech == AUTH_LOGIN:
-            authobjects = [ sieve_name(binascii.b2a_base64(ao)[:-1])
+        if mech == self.AUTH_LOGIN:
+            authobjects = [ self._sieve_name(self, binascii.b2a_base64(ao)[:-1])
                             for ao in authobjects
                             ]
-        elif mech == AUTH_PLAIN:
+        elif mech == self.AUTH_PLAIN:
             if len(authobjects) < 3:
                 # assume authorization identity (authzid) is missing
                 # and these two authobjects are username and password
                 authobjects.insert(0, '')
             ao = '\0'.join(authobjects)
             ao = binascii.b2a_base64(ao)[:-1]
-            authobjects = [ sieve_string(ao) ]
+            authobjects = [ self._sieve_string(self, ao) ]
         else:
-            raise self.error("managesieve doesn't support %s authentication." % mech)
+            raise ManageSieveError("managesieve doesn't support %s authentication." % mech)
 
         typ, data = self._command('AUTHENTICATE',
-                                  sieve_name(mech), *authobjects)
+                                  self._sieve_name(self, mech), *authobjects)
         if typ == 'OK':
             self.state = 'AUTH'
         return typ
@@ -494,14 +447,14 @@ class MANAGESIEVE:
         """
         Authenticate to the Sieve server using the best mechanism available.
         """
-        for authmech in AUTHMECHS:
+        for authmech in self.AUTHMECHS:
             if authmech in self.loginmechs:
                 authobjs = [auth, user, password]
-                if authmech == AUTH_LOGIN:
+                if authmech == self.AUTH_LOGIN:
                     authobjs = [user, password]
                 return self.authenticate(authmech, *authobjs)
         else:
-            raise self.abort('No matching authentication mechanism found.')
+            raise ManageSieveAbort('No matching authentication mechanism found.')
 
     def logout(self):
         """Terminate connection to server."""
@@ -526,9 +479,6 @@ class MANAGESIEVE:
         if typ != 'OK': return typ, data
         scripts = []
         for dat in data:
-            if __debug__:
-                if not len(dat) in (1, 2):
-                    self.error("Unexpected result from LISTSCRIPTS: %r" (dat,))
             scripts.append( (dat[0], dat[1] is not None ))
         return typ, scripts
 
@@ -543,10 +493,10 @@ class MANAGESIEVE:
         # command-getscript     = "GETSCRIPT" SP sieve-name CRLF
         # response-getscript    = [string CRLF] response-oknobye
         
-        typ, data = self._command('GETSCRIPT', sieve_name(scriptname))
+        typ, data = self._command('GETSCRIPT', self._sieve_name(self, scriptname))
         if typ != 'OK': return typ, data
         if len(data) != 1:
-            self.error('GETSCRIPT returned more than one string/script')
+            ManageSieveError('GETSCRIPT returned more than one string/script')
         # todo: decode data?
         return typ, data[0][0]
     
@@ -556,29 +506,29 @@ class MANAGESIEVE:
         # command-putscript     = "PUTSCRIPT" SP sieve-name SP string CRLF
         # response-putscript    = response-oknobye
         return self._simple_command('PUTSCRIPT',
-                                    sieve_name(scriptname),
-                                    sieve_string(scriptdata)
+                                    self._sieve_name(self, scriptname),
+                                    self._sieve_string(self, scriptdata)
                                     )
 
     def deletescript(self, scriptname):
         """Delete a scripts at the server."""
         # command-deletescript  = "DELETESCRIPT" SP sieve-name CRLF
         # response-deletescript = response-oknobye
-        return self._simple_command('DELETESCRIPT', sieve_name(scriptname))
+        return self._simple_command('DELETESCRIPT', self._sieve_name(self, scriptname))
 
 
     def setactive(self, scriptname):
         """Mark a script as the 'active' one."""
         # command-setactive     = "SETACTIVE" SP sieve-name CRLF
         # response-setactive    = response-oknobye
-        return self._simple_command('SETACTIVE', sieve_name(scriptname))
+        return self._simple_command('SETACTIVE', self._sieve_name(self, scriptname))
 
 
     def havespace(self, scriptname, size):
         # command-havespace     = "HAVESPACE" SP sieve-name SP number CRLF
         # response-havespace    = response-oknobye
         return self._simple_command('HAVESPACE',
-                                    sieve_name(scriptname),
+                                    self._sieve_name(self, scriptname),
                                     str(size))
 
 
@@ -618,14 +568,12 @@ class MANAGESIEVE:
             self.file = SSLFakeFile(sslobj)
             # MUST discard knowledge obtained from the server
             self.__clear_knowledge()
-            # Some servers send capabilities after TLS handshake, some
-            # do not. We send a bogus command, and expect a NO. If you
-            # get something else instead, read the extra NO to clear
-            # the buffer.
-            typ, data = self._command('BOGUS')
-            if typ != 'NO': 
-                typ, data = self._get_response()
-            # server may not advertise capabilities, thus we need to ask
+            # NB: We did send a BOGUS command here for buggy servers,
+            # but RFC 5804 forbids doing this. And it broke with
+            # servers following the RFC.
+            typ, data = self._get_response()
+            # Buggy servers may not advertise capabilities, thus we
+            # need to ask.
             self.capability()
-            if self.debug >= 3: self._mesg('started Transport Layer Security (TLS)')
+            log.info('started Transport Layer Security (TLS)')
         return typ, data

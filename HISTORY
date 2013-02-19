@@ -1,3 +1,24 @@
+Version 0.4.4 by Daniel Kertesz <daniel at spatof.org>
+--------------------------------------------------------------------
+:managesieve:
+  - Major rewrite, new command line utility: managesieve-cli.
+
+
+Version XXX by Hartmut Goebel <h.goebel at crazy-compilers.com>
+--------------------------------------------------------------------
+:sieveshell:
+  - Added option --port, thanks to Damien Aumaitre submitting for the
+    patch.
+  - Added option --verbose for controling debug output in managesieve.
+    May be given several times to increase verbosity.
+
+:managesieve:
+  - Switched to Python standard logging system.
+    This introduces a minor interface change: MANAGESIEVE.debug and
+    global Debug are gone. See source for information about debuging
+    log levels.
+
+
 Version 0.4.2 by Hartmut Goebel <h.goebel at crazy-compilers.com>
 --------------------------------------------------------------------
 :managesieve:
