@@ -233,6 +233,7 @@ class ManageSieveClient(object):
         response = self._send_command("CAPABILITY")
         if response.status == Response.OK:
             self._parse_capabilities(response.data)
+            return response
         else:
             raise InvalidResponse("Server responded %s at CAPABILITY command, "
                                   "expected OK; %r" %

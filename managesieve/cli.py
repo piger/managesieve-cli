@@ -101,6 +101,15 @@ class Client(object):
             print "Server does not have space for %s: %s" % (
                 self.args.name, response.text)
 
+    def cmd_capability(self):
+        response = self.sieve.capability()
+        if response.is_ok:
+            capabilities = response.data
+            for cap in capabilities:
+                print ': '.join(cap[0:2])
+        else:
+            print "Command failed: %s" % response.text
+
 
 def parse_cmdline():
     description = ("A command-line utility for interacting with remote "
@@ -177,6 +186,12 @@ def parse_cmdline():
     cmd_havespace.add_argument("name", metavar="FILENAME",
                                help="Absolute path of a local Sieve script")
     cmd_havespace.set_defaults(cmd="have_space")
+
+    cmd_capabilities = subparsers.add_parser(
+        "capability",
+        description="Request the server capability list",
+        help="Request the server capability list")
+    cmd_capabilities.set_defaults(cmd="capability")
 
     args = parser.parse_args()
     return args
