@@ -233,11 +233,8 @@ class ManageSieveClient(object):
         response = self._send_command("CAPABILITY")
         if response.status == Response.OK:
             self._parse_capabilities(response.data)
-            return response
         else:
-            raise InvalidResponse("Server responded %s at CAPABILITY command, "
-                                  "expected OK; %r" %
-                                  (response.status, response))
+            raise CommandFailed("CAPABILITY", response, response.text)
         return response
 
     def list_scripts(self):
