@@ -458,13 +458,3 @@ class ManageSieveClient(object):
         except (socket.error, OSError), e:
             raise ConnectionError("Socket error: %s" % e)
         return response
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG,
-                        format="%(asctime)s %(levelname)s: %(message)s [in "
-                        "%(funcName)s %(filename)s:%(lineno)d]",
-                        datefmt="%H:%M")
-    m = ManageSieveClient('spatof.org', 4190)
-    m.connect()
-    m.logout()
