@@ -2,7 +2,8 @@
 managesieve-cli
 ===============
 
-A command-line client for interacting with ManageSieve servers.
+A command-line client for interacting with ManageSieve servers, fork of
+http://pypi.python.org/pypi/managesieve
 
 Installation
 ------------
@@ -69,7 +70,7 @@ Credits
 
 * Daniel Kertesz <daniel at spatof dot org>
 
-See the README file for a complete list of the original authors; I just rewrote
+See `README.old` for a complete list of the original authors; I just rewrote
 some code to adapt it to my needs.
 
 .. vim: ft=rst
